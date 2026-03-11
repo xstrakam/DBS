@@ -186,6 +186,7 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 \subsection{Overview of tables and attributes}
 
 \subsubsection{User}
+
 \textbf{Purpose:} Stores information about registered users.
 
 \textbf{Attributes:}
@@ -206,6 +207,7 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 \textbf{Foreign keys:} None.
 
 \subsubsection{Movie}
+
 \textbf{Purpose:} Stores information about movies.
 
 \textbf{Attributes:}
@@ -225,9 +227,11 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 \textbf{Foreign keys:} None.
 
 \subsubsection{Person}
+
 \textbf{Purpose:} Stores information about people involved in movies (directors, actors, writers).
 
 \textbf{Attributes:}
+
 \begin{itemize}
     \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
     \item \texttt{first\_name}: VARCHAR(50), NOT NULL
@@ -240,9 +244,11 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 \textbf{Foreign keys:} None.
 
 \subsubsection{Rating}
+
 \textbf{Purpose:} Stores numerical movie ratings submitted by registered users.
 
 \textbf{Attributes:}
+
 \begin{itemize}
     \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
     \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY → User(id)
@@ -254,6 +260,7 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 \textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). Although the combination (\texttt{user\_id}, \texttt{movie\_id}) could serve as a natural primary key, an artificial key is more efficient for indexing.
 
 \textbf{Foreign keys:}
+
 \begin{itemize}
     \item \texttt{user\_id} → \texttt{User(id)}: ON DELETE CASCADE
     \item \texttt{movie\_id} → \texttt{Movie(id)}: ON DELETE CASCADE
