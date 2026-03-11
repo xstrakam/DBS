@@ -466,6 +466,36 @@ shares it publicly.
     \item \texttt{person\_id} REFERENCES \texttt{Person(id)}: ON DELETE CASCADE
 \end{itemize}
 
+\subsubsection{WatchlistMovie}
+
+\noindent\textbf{Purpose:} Junction table representing a M:N relationship
+between watchlists and movies. Allows a single watchlist to contain
+multiple movies, and a single movie to appear in multiple watchlists.
+
+\noindent\textbf{Attributes:}
+\begin{itemize}
+    \item \texttt{watchlist\_id}: INTEGER, NOT NULL, FOREIGN KEY,
+          REFERENCES Watchlist(id)
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY,
+          REFERENCES Movie(id)
+    \item \texttt{added\_at}: TIMESTAMP, NOT NULL,
+          DEFAULT CURRENT\_TIMESTAMP
+\end{itemize}
+
+\noindent\textbf{Primary key:} Composite key
+(\texttt{watchlist\_id}, \texttt{movie\_id}). A natural composite key
+is appropriate here because the combination uniquely identifies the
+relationship and no other table references this junction table.
+
+\noindent\textbf{Foreign keys:}
+\begin{itemize}
+    \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}:
+          ON DELETE CASCADE — removing a watchlist removes all its
+          movie entries
+    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}:
+          ON DELETE CASCADE — removing a movie removes it from all
+          watchlists
+\end{itemize}
 
 
 \newpage
