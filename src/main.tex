@@ -261,6 +261,51 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}: ON DELETE CASCADE
 \end{itemize}
 
+\subsubsection{Review}
+
+\noindent\textbf{Purpose:} Stores text reviews of movies written by registered users.
+
+\noindent\textbf{Attributes:}
+\begin{itemize}
+    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
+    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES User(id)
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Movie(id)
+    \item \texttt{title}: VARCHAR(200), NOT NULL
+    \item \texttt{content}: TEXT, NOT NULL, CHECK (LENGTH(content) >= 50)
+    \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
+\end{itemize}
+
+\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). Each review is a unique record identified by a numeric ID.
+
+\noindent\textbf{Foreign keys:}
+\begin{itemize}
+    \item \texttt{user\_id} REFERENCES \texttt{User(id)}: ON DELETE CASCADE
+    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}: ON DELETE CASCADE
+\end{itemize}
+
+\subsubsection{Watchlist}
+
+\noindent\textbf{Purpose:} Stores movie lists created by registered users.
+
+\noindent\textbf{Attributes:}
+\begin{itemize}
+    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
+    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES User(id)
+    \item \texttt{name}: VARCHAR(100), NOT NULL
+    \item \texttt{description}: TEXT, NULL
+    \item \texttt{is\_public}: BOOLEAN, NOT NULL, DEFAULT TRUE
+    \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
+\end{itemize}
+
+\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). Each list is a unique entity owned by a user.
+
+\noindent\textbf{Foreign keys:}
+\begin{itemize}
+    \item \texttt{user\_id} REFERENCES \texttt{User(id)}: ON DELETE CASCADE
+\end{itemize}
+
+
+
 
 \newpage
 \section{Implementation}
