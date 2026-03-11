@@ -259,6 +259,51 @@ have watched.
     \end{itemize}
 \end{enumerate}
 
+\subsection{Creating and Managing a Watchlist}
+
+A registered user creates a watchlist, adds movies to it, and optionally
+shares it publicly.
+
+\textbf{Main flow:}
+
+\begin{enumerate}
+    \item Registered user navigates to their profile and selects
+          ``Create watchlist''
+    \item User enters a name, optional description, and sets visibility
+          (public / private)
+    \item System inserts a new record into \texttt{Watchlist}
+    \item User browses the movie catalogue and adds movies to the watchlist
+    \item System inserts records into \texttt{WatchlistMovie}
+          (watchlist\_id, movie\_id)
+    \item If the watchlist is public, other users can view and browse it
+\end{enumerate}
+
+\textbf{Data layer:}
+\begin{itemize}
+    \item INSERT into \texttt{Watchlist} (user\_id, name, description,
+          is\_public)
+    \item INSERT into \texttt{WatchlistMovie} (watchlist\_id, movie\_id)
+          for each added movie
+    \item SELECT on \texttt{Watchlist} WHERE is\_public = TRUE for
+          public browsing
+\end{itemize}
+
+\textbf{Alternate flows:}
+\begin{enumerate}
+    \item Movie already in watchlist
+    \begin{itemize}
+        \item UNIQUE constraint on (watchlist\_id, movie\_id) prevents
+              duplicates
+        \item System notifies the user that the movie is already on
+              the list
+    \end{itemize}
+    \item User deletes a watchlist
+    \begin{itemize}
+        \item ON DELETE CASCADE removes all associated
+              \texttt{WatchlistMovie} records
+    \end{itemize}
+\end{enumerate}
+
 \newpage
 
 \section{Relational Model Design}
