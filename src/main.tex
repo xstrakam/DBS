@@ -87,44 +87,82 @@
 % Template source: https://github.com/FIIT-Databases/assignment-template
 % =============================================================================
 
-\section{Analysis}
-\label{sec:analysis}
+\section{Specification}
+\label{sec:specification}
 
-The goal of this project was to create a submission template for the DBS
-course that students can clone and start writing in immediately. The template
-should be easy to use, support Slovak and English, and not require any prior
-\LaTeX{} experience\footnote{If this is your first time with \LaTeX{}, the
-Overleaf guide \cite{overleaf-docs} covers everything you need in about 30 minutes.}.
-
-The template repository is available at \cite{template-repo}.
-
-% ── Subsections ──────────────────────────────────────────────────────────────
-% Use \subsection{} and \subsubsection{} when you need more structure.
-
-\subsection{Requirements}
-
-We identified the following requirements:
-
-\begin{itemize}
-    \item Clean cover page with faculty branding.
-    \item Bilingual support (SK/EN) via a single toggle.
-    \item Examples of tables, figures, code, and citations.
-    \item Minimal package dependencies --- it should compile everywhere.
-\end{itemize}
-
-When listing ordered steps, use \texttt{enumerate} instead:
-
+\subsection{Problem despription}
+\subsection{Actors}
 \begin{enumerate}
-    \item Clone the repository.
-    \item Edit \texttt{main.tex}.
-    \item Run \texttt{make}.
-    \item Submit the PDF.
+    \item Visitor (unregistered user)
+    \begin{itemize}\
+        \item Can browse movie catalogue
+        \item Can search and filter movies in the catalogue
+        \item Can read reviews and view ratings 
+    \end{itemize}
+    \item Registered user
+    \begin{itemize}\
+        \item Has all visitor's rights
+        \item Can rate movies
+        \item Can write reviews
+        \item Can create watchlists and share them amongst other users
+    \end{itemize}
+    \item Moderator
+    \item Administrator
+    \begin{itemize}\
+        \item Has all moderator's rights
+        \item Can add new movies into database
+        \item Can modify movie attributes
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Key entities}
+\begin{enumerate}
+    \item Movie
+    \item User
+    \item Review
+    \item Rating
+    \item Watchlist
+    \item Genre
+    \item Person
+\end{enumerate}
+
+\subsection{Business rules and restrictions}
+\begin{enumerate}
+    \item Rating uniqueness
+    One user can rate a movie just once. This also includes that only registered users can rate a movie.
+    \item Movie uniqueness
+    Combination of title and release year must be unique for every movie to prevent duplicate entries.
+    Integrity constraint: UNIQUE constraint on (title, release_year) in Movie table
+    \item Valid release year
 \end{enumerate}
 
 
 \newpage
-\section{Proposal}
-\label{sec:proposal}
+\section{Use cases}
+\label{sec:use_cases}
+
+\subsection{Searching and filtering movies}
+Visitor or registered user filters movies based on multiple criteria (genre, release year, rating, director, actors) and sorts them.
+
+\textbf{Main flow:}
+\begin{enumerate}
+    \item User opens search tab
+    \item System displays available filters
+    \item User selects and applies filters
+    \item User chooses sorting option
+    \item System creates SQL query and applies it onto the database
+    \item System shows filtered movies
+\end{enumerate}
+
+\textbf{Alternate flows:}
+\begin{enumerate}
+    \item No results
+    \begin{itemize}
+        \item No movies match the selected filters
+        \item System shows "no matches" message
+        \item User adjusts the filters
+    \end{itemize}
+\end{enumerate}
 
 We compared a few approaches before settling on the current structure.
 Table~\ref{tab:comparison} summarizes our options.
