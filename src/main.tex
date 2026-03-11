@@ -128,12 +128,25 @@
 
 \subsection{Business rules and restrictions}
 \begin{enumerate}
-    \item Rating uniqueness
+    \item \textbf{Rating uniqueness}
     One user can rate a movie just once. This also includes that only registered users can rate a movie.
-    \item Movie uniqueness
+    \begin{itemize}
+        \item Integrity constraint: UNIQUE constraint on (\texttt{user\_id}, \texttt{movie\_id}) in Rating table
+        \item Integrity constraint: NOT NULL foreign key on \texttt{user\_id} in Rating table
+        \item Reason: Prevents duplicate ratings that would skew the average score
+    \end{itemize}
+    \item \textbf{Movie uniqueness}
     Combination of title and release year must be unique for every movie to prevent duplicate entries.
-    Integrity constraint: UNIQUE constraint on (title, release_year) in Movie table
-    \item Valid release year
+    \begin{itemize}
+        \item Integrity constraint: UNIQUE constraint on (\texttt{title}, \texttt{release\_year}) in Movie table
+        \item Reason: The same movie with the same release year cannot be added twice
+    \end{itemize}
+    \item \textbf{Valid release year}
+    Movie release year must be realistic.
+    \begin{itemize}
+        \item Integrity constraint: CHECK constraint (\texttt{release\_year} >= 1888 AND \texttt{release\_year} <= 2100)
+        \item Reason: The first movie was filmed in 1888, the upper limit protects against input errors
+    \end{itemize}
 \end{enumerate}
 
 
