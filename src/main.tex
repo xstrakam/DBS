@@ -34,10 +34,10 @@
 \input{lang/en}
 
 % ─── Student details ─────────────────────────────────────────────────────────
-\newcommand{\StudentName}{Matej Straka, Michal Novický}
+\newcommand{\StudentName}{Matej Straka, Michal Novick\'{y}}
 \newcommand{\StudyGroup}{Thursday 9:00}
 \newcommand{\AssignmentNumber}{67}
-\newcommand{\AssignmentTitle}{Filmový portál}
+\newcommand{\AssignmentTitle}{Filmov\'{y} port\'{a}l}
 \newcommand{\AcademicYear}{2025/2026}
 
 % =============================================================================
@@ -187,10 +187,9 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 
 \subsubsection{User}
 
-\textbf{Purpose:} Stores information about registered users.
+\noindent\textbf{Purpose:} Stores information about registered users.
 
-\textbf{Attributes:}
-
+\noindent\textbf{Attributes:}
 \begin{itemize}
     \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
     \item \texttt{first\_name}: VARCHAR(50), NOT NULL
@@ -202,16 +201,15 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred over username or email because both, although unique, might be changed in the future.
+\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred over username or email because both, although unique, might be changed in the future.
 
-\textbf{Foreign keys:} None.
+\noindent\textbf{Foreign keys:} None.
 
 \subsubsection{Movie}
 
-\textbf{Purpose:} Stores information about movies.
+\noindent\textbf{Purpose:} Stores information about movies.
 
-\textbf{Attributes:}
-
+\noindent\textbf{Attributes:}
 \begin{itemize}
     \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
     \item \texttt{title}: VARCHAR(200), NOT NULL
@@ -222,16 +220,15 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred over the combination of title and release year, because title can be very long and id is more efficient for indexing.
+\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred over the combination of title and release year, because title can be very long and id is more efficient for indexing.
 
-\textbf{Foreign keys:} None.
+\noindent\textbf{Foreign keys:} None.
 
 \subsubsection{Person}
 
-\textbf{Purpose:} Stores information about people involved in movies (directors, actors, writers).
+\noindent\textbf{Purpose:} Stores information about people involved in movies (directors, actors, writers).
 
-\textbf{Attributes:}
-
+\noindent\textbf{Attributes:}
 \begin{itemize}
     \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
     \item \texttt{first\_name}: VARCHAR(50), NOT NULL
@@ -239,34 +236,30 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \item \texttt{birth\_year}: INTEGER, NULL, CHECK (birth\_year >= 1800 AND birth\_year <= 2010)
 \end{itemize}
 
-\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred because multiple people can share the same name.
+\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred because multiple people can share the same name.
 
-\textbf{Foreign keys:} None.
+\noindent\textbf{Foreign keys:} None.
 
 \subsubsection{Rating}
 
-\textbf{Purpose:} Stores numerical movie ratings submitted by registered users.
+\noindent\textbf{Purpose:} Stores numerical movie ratings submitted by registered users.
 
-\textbf{Attributes:}
-
+\noindent\textbf{Attributes:}
 \begin{itemize}
     \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
-    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY → User(id)
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY → Movie(id)
+    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES User(id)
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Movie(id)
     \item \texttt{score}: INTEGER, NOT NULL, CHECK (score >= 1 AND score <= 10)
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). Although the combination (\texttt{user\_id}, \texttt{movie\_id}) could serve as a natural primary key, an artificial key is more efficient for indexing.
+\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). Although the combination (\texttt{user\_id}, \texttt{movie\_id}) could serve as a natural primary key, an artificial key is more efficient for indexing.
 
-\textbf{Foreign keys:}
-
+\noindent\textbf{Foreign keys:}
 \begin{itemize}
-    \item \texttt{user\_id} → \texttt{User(id)}: ON DELETE CASCADE
-    \item \texttt{movie\_id} → \texttt{Movie(id)}: ON DELETE CASCADE
+    \item \texttt{user\_id} REFERENCES \texttt{User(id)}: ON DELETE CASCADE
+    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}: ON DELETE CASCADE
 \end{itemize}
-
-
 
 
 \newpage
