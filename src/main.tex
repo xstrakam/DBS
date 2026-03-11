@@ -191,9 +191,26 @@ Attributes:
     \item email: VARCHAR(254), NOT NULL, UNIQUE
     \item password_hash: VARCHAR(255), NOT NULL
     \item role: ENUM('user', 'admin'), NOT NULL, DEFAULT 'user'
+    \item created_at: TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP
 \end{itemize}
 
-Primary key: Artificial key id with AUTO_INCREMENT. Artificial key is preferred over username or email because both,  although unique, might be changed in the future.
+Primary key: Artificial key id with AUTO_INCREMENT. Artificial key is preferred over username or email because both, although unique, might be changed in the future.
+Foreign keys: This table does not contain any foreign keys.
+
+\subsubsection{Movie}
+Purpose: Stores information about movies.
+Attributes:
+\begin{itemize}
+    \item id: INTEGER, AUTO_INCREMENT, PRIMARY KEY
+    \item title: VARCHAR(200), NOT NULL
+    \item release_year: INTEGER, NOT NULL, CHECK (release_year >= 1888 AND release_year <= 2030)
+    \item length: INTEGER, CHECK (length > 0)
+    \item average_rating: DECIMAL(3,1) CHECK (average_rating >= 0 AND average_rating <= 10), DEFAULT NULL
+    \item total_ratings: INTEGER, NOT NULL, CHECK (total_ratings >= 0), DEFAULT 0
+    \item created_at: TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP
+\end{itemize}
+
+Primary key: Artificial key id with AUTO_INCREMENT. Artificial key is preferred over the combination of title and release year, because title can be very long and id is more efficient for indexing.
 Foreign keys: This table does not contain any foreign keys.
 
 
