@@ -85,7 +85,9 @@
 \label{sec:specification}
 
 \subsection{Problem despription}
+
 \subsection{Actors}
+
 \begin{enumerate}
     \item Visitor (unregistered user)
     \begin{itemize}
@@ -110,6 +112,7 @@
 \end{enumerate}
 
 \subsection{Key entities}
+
 \begin{enumerate}
     \item Movie
     \item User
@@ -121,6 +124,7 @@
 \end{enumerate}
 
 \subsection{Business rules and restrictions}
+
 \begin{enumerate}
     \item \textbf{Rating uniqueness}
     One user can rate a movie just once. This also includes that only registered users can rate a movie.
@@ -145,13 +149,16 @@
 
 
 \newpage
+
 \section{Use cases}
 \label{sec:use_cases}
 
 \subsection{Searching and filtering movies}
+
 Visitor or registered user filters movies based on multiple criteria (genre, release year, rating, director, actors) and sorts them.
 
 \textbf{Main flow:}
+
 \begin{enumerate}
     \item User opens search tab
     \item System displays available filters
@@ -162,6 +169,7 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 \end{enumerate}
 
 \textbf{Alternate flows:}
+
 \begin{enumerate}
     \item No results
     \begin{itemize}
@@ -172,12 +180,17 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 \end{enumerate}
 
 \newpage
+
 \section{Relational Model Design}
+
 \subsection{Overview of tables and attributes}
+
 \subsubsection{User}
+
 \textbf{Purpose:} Stores information about registered users.
 
 \textbf{Attributes:}
+
 \begin{itemize}
     \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
     \item \texttt{first\_name}: VARCHAR(50), NOT NULL
@@ -194,9 +207,11 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 \textbf{Foreign keys:} None.
 
 \subsubsection{Movie}
+
 \textbf{Purpose:} Stores information about movies.
 
 \textbf{Attributes:}
+
 \begin{itemize}
     \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
     \item \texttt{title}: VARCHAR(200), NOT NULL
