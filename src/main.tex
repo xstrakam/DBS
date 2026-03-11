@@ -332,14 +332,13 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \item \texttt{person\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Person(id)
     \item \texttt{role}: ENUM('actor', 'director', 'writer'), NOT NULL
 \end{itemize}
-\end{itemize}
 
 \noindent\textbf{Primary key:} %asi (movie_id, person_id, role)
 
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}: ON DELETE CASCADE
-    \item \texttt{person\_id} REFERENCES \texttt{Genre(id)}: ON DELETE CASCADE
+    \item \texttt{person\_id} REFERENCES \texttt{Person(id)}: ON DELETE CASCADE
 \end{itemize}
 
 
