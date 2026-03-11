@@ -156,7 +156,7 @@
 
 \subsection{Searching and filtering movies}
 Visitor or registered user filters movies based on multiple criteria (genre, release year, rating, director, actors) and sorts them.
-
+\br
 \textbf{Main flow:}
 \begin{enumerate}
     \item User opens search tab
@@ -176,6 +176,29 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
         \item User adjusts the filters
     \end{itemize}
 \end{enumerate}
+
+\newpage
+\section{Relational Model Design}
+\subsection{Overview of tables and attributes}
+\subsubsection{User}
+Purpose: Stores information about registered users.
+Attributes:
+\begin{itemize}
+    \item id: INTEGER, AUTO_INCREMENT, PRIMARY KEY
+    \item first_name: VARCHAR(50), NOT NULL
+    \item last_name: VARCHAR(50), NOT NULL
+    \item username: VARCHAR(30), NOT NULL, UNIQUE
+    \item email: VARCHAR(254), NOT NULL, UNIQUE
+    \item password_hash: VARCHAR(255), NOT NULL
+    \item role: ENUM('user', 'admin'), NOT NULL, DEFAULT 'user'
+\end{itemize}
+
+Primary key: Artificial key id with AUTO_INCREMENT. Artificial key is preferred over username or email because both,  although unique, might be changed in the future.
+Foreign keys: This table does not contain any foreign keys.
+
+
+
+
 
 We compared a few approaches before settling on the current structure.
 Table~\ref{tab:comparison} summarizes our options.
