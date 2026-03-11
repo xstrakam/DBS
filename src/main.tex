@@ -179,6 +179,50 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \end{itemize}
 \end{enumerate}
 
+\subsection{Adding a Movie (Administrator)}
+
+An administrator adds a new movie entry to the portal, including its
+metadata, genres, and cast.
+
+\textbf{Main flow:}
+
+\begin{enumerate}
+    \item Administrator navigates to the movie management section
+    \item System displays the movie submission form
+    \item Administrator fills in movie details (title, release year,
+          runtime, genres, directors, actors, writers)
+    \item Administrator submits the form
+    \item System validates the input (release year range, unique
+          title + year combination, positive runtime)
+    \item System inserts a new record into \texttt{Movie}, links genres
+          via \texttt{MovieGenre}, and links people via \texttt{MoviePerson}
+    \item System confirms successful addition
+\end{enumerate}
+
+\textbf{Data layer:}
+\begin{itemize}
+    \item INSERT into \texttt{Movie} (title, release\_year, runtime\_minutes)
+    \item INSERT into \texttt{MovieGenre} for each selected genre
+    \item INSERT into \texttt{MoviePerson} for each person with their role
+\end{itemize}
+
+\textbf{Alternate flows:}
+\begin{enumerate}
+    \item Duplicate movie
+    \begin{itemize}
+        \item A movie with the same title and release year already exists
+        \item System rejects the submission and displays an error message
+        \item Administrator corrects the entry or cancels
+    \end{itemize}
+    \item Invalid data
+    \begin{itemize}
+        \item Release year or runtime fails CHECK constraint
+        \item System highlights the invalid fields
+        \item Administrator corrects the values and resubmits
+    \end{itemize}
+\end{enumerate}
+
+
 \newpage
 
 \section{Relational Model Design}
