@@ -482,11 +482,7 @@ multiple movies, and a single movie to appear in multiple watchlists.
           DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Composite key
-(\texttt{watchlist\_id}, \texttt{movie\_id}). A natural composite key
-is appropriate here because the combination uniquely identifies the
-relationship and no other table references this junction table.
-
+\noindent\textbf{Primary key:}
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}:
