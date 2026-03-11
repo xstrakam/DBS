@@ -3,16 +3,16 @@
 
 \documentclass[11pt, a4paper]{article}
 
-% ─── Packages ────────────────────────────────────────────────────────────────
+% ─── Packages ──────────────────────────────────────────────────────────────
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{graphicx}
 \usepackage{hyperref}
-\usepackage{booktabs}       % nicer tables (\toprule, \midrule, \bottomrule)
-\usepackage{float}          % [H] placement for figures and tables
-\usepackage{xcolor}         % colors (used by listings)
-\usepackage{listings}       % code listings
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{listings}
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue!70!black}
 
 % ─── Code listing style ─────────────────────────────────────────────────────
@@ -25,7 +25,6 @@
     xleftmargin=2em,
     framexleftmargin=1.5em
 }
-% Pro tip: for syntax highlighting, look into the 'minted' package.
 
 % ─── Bibliography ────────────────────────────────────────────────────────────
 \usepackage[style=numeric, backend=bibtex]{biblatex}
@@ -81,11 +80,6 @@
 \newpage
 
 % =============================================================================
-% This document serves as both the assignment template and a quick guide
-% to the LaTeX features you will need. Replace the content, keep the structure.
-%
-% Template source: https://github.com/FIIT-Databases/assignment-template
-% =============================================================================
 
 \section{Specification}
 \label{sec:specification}
@@ -97,7 +91,7 @@
     \begin{itemize}
         \item Can browse movie catalogue
         \item Can search and filter movies in the catalogue
-        \item Can read reviews and view ratings 
+        \item Can read reviews and view ratings
     \end{itemize}
     \item Registered user
     \begin{itemize}
@@ -156,6 +150,7 @@
 
 \subsection{Searching and filtering movies}
 Visitor or registered user filters movies based on multiple criteria (genre, release year, rating, director, actors) and sorts them.
+
 \textbf{Main flow:}
 \begin{enumerate}
     \item User opens search tab
@@ -171,7 +166,7 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \item No results
     \begin{itemize}
         \item No movies match the selected filters
-        \item System shows "no matches" message
+        \item System shows ``no matches'' message
         \item User adjusts the filters
     \end{itemize}
 \end{enumerate}
@@ -180,70 +175,41 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
 \section{Relational Model Design}
 \subsection{Overview of tables and attributes}
 \subsubsection{User}
-Purpose: Stores information about registered users.
-Attributes:
+\textbf{Purpose:} Stores information about registered users.
+
+\textbf{Attributes:}
 \begin{itemize}
-    \item id: INTEGER, AUTO_INCREMENT, PRIMARY KEY
-    \item first_name: VARCHAR(50), NOT NULL
-    \item last_name: VARCHAR(50), NOT NULL
-    \item username: VARCHAR(30), NOT NULL, UNIQUE
-    \item email: VARCHAR(254), NOT NULL, UNIQUE
-    \item password_hash: VARCHAR(255), NOT NULL
-    \item role: ENUM('user', 'admin'), NOT NULL, DEFAULT 'user'
-    \item created_at: TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP
+    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
+    \item \texttt{first\_name}: VARCHAR(50), NOT NULL
+    \item \texttt{last\_name}: VARCHAR(50), NOT NULL
+    \item \texttt{username}: VARCHAR(30), NOT NULL, UNIQUE
+    \item \texttt{email}: VARCHAR(254), NOT NULL, UNIQUE
+    \item \texttt{password\_hash}: VARCHAR(255), NOT NULL
+    \item \texttt{role}: ENUM('user', 'admin'), NOT NULL, DEFAULT 'user'
+    \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-Primary key: Artificial key id with AUTO_INCREMENT. Artificial key is preferred over username or email because both, although unique, might be changed in the future.
-Foreign keys: This table does not contain any foreign keys.
+\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred over username or email because both, although unique, might be changed in the future.
+
+\textbf{Foreign keys:} None.
 
 \subsubsection{Movie}
-Purpose: Stores information about movies.
-Attributes:
+\textbf{Purpose:} Stores information about movies.
+
+\textbf{Attributes:}
 \begin{itemize}
-    \item id: INTEGER, AUTO_INCREMENT, PRIMARY KEY
-    \item title: VARCHAR(200), NOT NULL
-    \item release_year: INTEGER, NOT NULL, CHECK (release_year >= 1888 AND release_year <= 2030)
-    \item length: INTEGER, CHECK (length > 0)
-    \item average_rating: DECIMAL(3,1) CHECK (average_rating >= 0 AND average_rating <= 10), DEFAULT NULL
-    \item total_ratings: INTEGER, NOT NULL, CHECK (total_ratings >= 0), DEFAULT 0
-    \item created_at: TIMESTAMP, NOT NULL, DEFAULT CURRENT_TIMESTAMP
+    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
+    \item \texttt{title}: VARCHAR(200), NOT NULL
+    \item \texttt{release\_year}: INTEGER, NOT NULL, CHECK (release\_year >= 1888 AND release\_year <= 2030)
+    \item \texttt{runtime\_minutes}: INTEGER, CHECK (runtime\_minutes > 0)
+    \item \texttt{average\_rating}: DECIMAL(3,1), DEFAULT NULL, CHECK (average\_rating >= 0 AND average\_rating <= 10)
+    \item \texttt{total\_ratings}: INTEGER, NOT NULL, CHECK (total\_ratings >= 0), DEFAULT 0
+    \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-Primary key: Artificial key id with AUTO_INCREMENT. Artificial key is preferred over the combination of title and release year, because title can be very long and id is more efficient for indexing.
-Foreign keys: This table does not contain any foreign keys.
+\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred over the combination of title and release year, because title can be very long and id is more efficient for indexing.
 
-
-
-
-
-We compared a few approaches before settling on the current structure.
-Table~\ref{tab:comparison} summarizes our options.
-
-% ── Tables ───────────────────────────────────────────────────────────────────
-% Use \begin{table}[H] to place the table exactly here.
-% Label it with \label{} and reference it with Table~\ref{}.
-
-\begin{table}[H]
-    \centering
-    \caption{Comparison of template approaches}
-    \label{tab:comparison}
-    \begin{tabular}{l c c c}
-        \toprule
-        \textbf{Approach}  & \textbf{Easy to edit} & \textbf{Bilingual} & \textbf{Compiles anywhere} \\
-        \midrule
-        Word document       & yes                   & manual             & n/a  \\
-        Markdown + Pandoc   & yes                   & no                 & maybe \\
-        \LaTeX{} template   & yes                   & yes                & yes  \\
-        \bottomrule
-    \end{tabular}
-\end{table}
-
-We chose \LaTeX{} because it handles structured documents, citations,
-and cross-references well --- things that matter when writing technical
-reports\footnote{It also looks way better than a Word document. But we are
-biased.}. Unrelated: the wood frog can survive being frozen solid for months ---
-its heart stops, it stops breathing, and in spring it just thaws and hops away.
-We found this less stressful than debugging \LaTeX{} table alignment.
+\textbf{Foreign keys:} None.
 
 
 \newpage
@@ -253,9 +219,6 @@ We found this less stressful than debugging \LaTeX{} table alignment.
 The template lives in a simple directory structure with localization files
 separated from the main document. Switching language requires changing one
 line:
-
-% ── Code listings ────────────────────────────────────────────────────────────
-% Use lstlisting for short code snippets.
 
 \begin{lstlisting}[language=TeX, caption={Switching language in the preamble}]
 % English
@@ -275,18 +238,10 @@ GROUP BY s.name
 ORDER BY submission_count DESC;
 \end{lstlisting}
 
-% ── Inline code ──────────────────────────────────────────────────────────────
-% Use \texttt{} for inline code: \texttt{SELECT * FROM ...}
-
 References to tables, figures, and sections are automatic. For example,
-this is Section~\ref{sec:implementation}, the comparison is in
-Table~\ref{tab:comparison}, and the faculty logo is shown in
+this is Section~\ref{sec:implementation}, and the faculty logo is shown in
 Figure~\ref{fig:logo} in Attachment~\ref{sec:attachment-a1}.
 If you add or reorder content, the numbers update on the next build.
-
-% ── Citations ────────────────────────────────────────────────────────────────
-% Add entries to references.bib, then cite them with \cite{key}.
-% The bibliography at the end is generated automatically.
 
 The database fundamentals referenced throughout the course are covered
 in \cite{elmasri2016}. For PostgreSQL-specific syntax, see
@@ -304,16 +259,14 @@ putting all examples in one place --- this document.
 
 We also learned that BibTeX interprets \texttt{@} signs in comments as
 entry types, which caused confusing errors. Small things like this are
-easy to fix once you know about them, but hard to debug the first time\footnote{A
-group of frogs is called an ``army.'' A group of students debugging BibTeX at
-2\,AM is called ``Tuesday.''}.
+easy to fix once you know about them, but hard to debug the first time.
 
 
 \newpage
 \section{Conclusion}
 \label{sec:conclusion}
 
-The template meets the requirements from Section~\ref{sec:analysis}.
+The template meets the requirements from the specification.
 It compiles with a standard \LaTeX{} distribution, supports two
 languages, and provides working examples of every feature students
 are likely to need.
@@ -331,11 +284,6 @@ For anything not covered here, the Overleaf documentation
 \section{Sample figures}
 \label{sec:attachment-a1}
 
-% ── Figures ──────────────────────────────────────────────────────────────────
-% Use \begin{figure}[H] to place the figure exactly here.
-% Label it with \label{} and reference it with Figure~\ref{}.
-% Keep images in the assets/ directory.
-
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.25\textwidth]{../assets/logo}
@@ -346,18 +294,5 @@ For anything not covered here, the Overleaf documentation
 Place your diagrams, screenshots, and other supporting images in this
 section. Reference them from the main text using
 \texttt{Figure\~{}\textbackslash ref\{fig:logo\}}.
-
-Some frogs can absorb water through a patch of skin on their belly called a
-``drinking patch'' --- they literally sit in puddles to hydrate. This has
-nothing to do with databases but is objectively more interesting than
-anything on this page.
-
-% You can control the image size with the width parameter:
-%   width=0.5\textwidth   ... half the page width
-%   width=5cm             ... exact size
-%   scale=0.8             ... 80% of original
-
-% To add more figures, copy the block above and change the file path,
-% caption, and label.
 
 \end{document}
