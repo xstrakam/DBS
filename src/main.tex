@@ -304,6 +304,43 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \item \texttt{user\_id} REFERENCES \texttt{User(id)}: ON DELETE CASCADE
 \end{itemize}
 
+\subsubsection{MovieGenre}
+
+\noindent\textbf{Purpose:} Junction table representing a M:N relationship between movies and genres.
+
+\noindent\textbf{Attributes:}
+\begin{itemize}
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Movie(id)
+    \item \texttt{genre\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Genre(id)
+\end{itemize}
+
+\noindent\textbf{Primary key:} %asi (movie_id, genre_id)
+
+\noindent\textbf{Foreign keys:}
+\begin{itemize}
+    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}: ON DELETE CASCADE
+    \item \texttt{genre\_id} REFERENCES \texttt{Genre(id)}: ON DELETE CASCADE
+\end{itemize}
+
+\subsubsection{MoviePerson}
+
+\noindent\textbf{Purpose:} Junction table representing a M:N relationship between movies and directors, actors and writers.
+
+\noindent\textbf{Attributes:}
+\begin{itemize}
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Movie(id)
+    \item \texttt{person\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Person(id)
+    \item \texttt{role}: ENUM('actor', 'director', 'writer'), NOT NULL
+\end{itemize}
+\end{itemize}
+
+\noindent\textbf{Primary key:} %asi (movie_id, person_id, role)
+
+\noindent\textbf{Foreign keys:}
+\begin{itemize}
+    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}: ON DELETE CASCADE
+    \item \texttt{person\_id} REFERENCES \texttt{Genre(id)}: ON DELETE CASCADE
+\end{itemize}
 
 
 
