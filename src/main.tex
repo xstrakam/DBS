@@ -222,6 +222,42 @@ metadata, genres, and cast.
     \end{itemize}
 \end{enumerate}
 
+\subsection{Rating a Movie}
+
+A registered user submits a numerical rating (1--10) for a movie they
+have watched.
+
+\textbf{Main flow:}
+
+\begin{enumerate}
+    \item Registered user opens a movie detail page
+    \item System checks that the user has not already rated this movie
+    \item User selects a score between 1 and 10 and confirms
+    \item System inserts a record into \texttt{Rating}
+    \item System recalculates \texttt{average\_rating} and increments
+          \texttt{total\_ratings} in \texttt{Movie}
+    \item Updated average rating is displayed on the movie page
+\end{enumerate}
+
+\textbf{Data layer:}
+\begin{itemize}
+    \item SELECT on \texttt{Rating} to check (user\_id, movie\_id) uniqueness
+    \item INSERT into \texttt{Rating} (user\_id, movie\_id, score)
+    \item UPDATE \texttt{Movie} SET average\_rating, total\_ratings
+\end{itemize}
+
+\textbf{Alternate flows:}
+\begin{enumerate}
+    \item User already rated this movie
+    \begin{itemize}
+        \item UNIQUE constraint on (user\_id, movie\_id) prevents duplicate
+        \item System offers the option to update the existing rating instead
+    \end{itemize}
+    \item User is not logged in
+    \begin{itemize}
+        \item System redirects to the login page
+    \end{itemize}
+\end{enumerate}
 
 \newpage
 
