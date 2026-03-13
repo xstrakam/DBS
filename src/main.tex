@@ -358,7 +358,7 @@ shares it publicly.
     \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{first\_name}: VARCHAR(50), NOT NULL
     \item \texttt{last\_name}: VARCHAR(50), NOT NULL
-    \item \texttt{birth\_year}: INTEGER, NULL, CHECK (birth\_year >= 1800 AND birth\_year <= 2010)
+    \item \texttt{birth\_year}: INTEGER, NOT NULL, CHECK (birth\_year >= 1800 AND birth\_year <= 2010)
 \end{itemize}
 
 \noindent\textbf{Primary key:} Surrogate key \texttt{id}. A surrogate key is preferred because multiple people can share the same name.
@@ -417,7 +417,7 @@ shares it publicly.
     \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{name}: VARCHAR(100), NOT NULL
-    \item \texttt{description}: TEXT, NULL
+    \item \texttt{description}: TEXT
     \item \texttt{is\_public}: BOOLEAN, NOT NULL, DEFAULT TRUE
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
@@ -526,7 +526,7 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
     \item Relationship type: 1:N - User can rate multiple movies. A primary key from table User can appear multiple times as foreign key in table Rating.
     \item Cardinality: 1 (User) 0..* (Rating) - User can rate 0 or more movies.
     \item Mandatory: \texttt{user\_id} NOT NULL - Rating must belong to a user.
-    \item Deleting: \texttt{user\_id}: CASCADE - Deleting a user removes all his ratings. %mozno dat SET NULL
+    \item Deleting: \texttt{user\_id} CASCADE - Deleting a user removes all his ratings. %mozno dat SET NULL
 \end{itemize}
 
 \subsubsection{User and Review}
@@ -534,23 +534,31 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
     \item Relationship type: 1:N - User can review multiple movies. A primary key from table User can appear multiple times as foreign key in table Review.
     \item Cardinality: 1 (User) 0..* (Review) - User can review 0 or more movies.
     \item Mandatory: \texttt{user\_id} NOT NULL - Review must belong to a user.
-    \item Deleting: \texttt{user\_id}: CASCADE - Deleting a user removes all his reviews. 
+    \item Deleting: \texttt{user\_id} CASCADE - Deleting a user removes all his reviews. 
 \end{itemize}
 
 \subsubsection{User and Watchlist}
 \begin{itemize}
     \item Relationship type: M:N - User can create multiple watchlists and share them among friends. Watchlist can have multiple owners. This relationship is realized by using junction table WatchlistUser.
-    \item Cardinality: 1 (User) 0..* (WatchlistUser), 1..* (WatchlistUser) 1 (Watchlist), - User can own 0 or more watchlists. Watchlist has to have at least one owner.
-    \item Mandatory: \texttt{user\_id} NOT NULL, \texttt{watchlist\_id} NOT NULL. A row with one of these values as NULL would not make sense.
-    \item Deleting: \texttt{user\_id}: CASCADE - Deleting a user removes all his relationships with watchlists. \texttt{watchlist\_id}: CASCADE - Deleting a watchlist removes all relationships with users.
+    \item Cardinality: 
+    \begin{itemize}
+        \item 1 (User) 0..* (WatchlistUser) - User can own 0 or more watchlists.
+        \item 1..* (WatchlistUser) 1 (Watchlist) - Watchlist has to have at least one owner.
+    \end{itemize}
+    \item Mandatory: \texttt{user\_id} NOT NULL, \texttt{watchlist\_id} NOT NULL.
+    \item Deleting: \texttt{user\_id} CASCADE - Deleting a user removes all his relationships with watchlists. \texttt{watchlist\_id} CASCADE - Deleting a watchlist removes all relationships with users.
 \end{itemize}
 
 \subsubsection{Watchlist and Movie}
 \begin{itemize}
     \item Relationship type: M:N - Watchlist can have multiple movies. A movie can appear in multiple watchlists. This relationship is realized by using junction table WatchlistMovie.
-    \item Cardinality: 1 (Watchlist) 0..* (WatchlistMovie), 0..* (WatchlistMovie) 1 (Movie) - Watchlist can consist of 0 or more movies. A movie can appear in 0 or more watchlists.     
-    \item Mandatory: \texttt{watchlist\_id} NOT NULL, \texttt{movie\_id} NOT NULL. A row with one of these values as NULL would not make sense.
-    \item Deleting: \texttt{watchlist\_id}: CASCADE - Deleting a watchlist removes relationships with movies in that particular watchlist. \texttt{movie\_id}: CASCADE - Deleting a movie removes it from every watchlist. 
+    \item Cardinality: 
+    \begin{itemize}
+        \item 1 (Watchlist) 0..* (WatchlistMovie) - Watchlist can consist of 0 or more movies.
+        \item 0..* (WatchlistMovie) 1 (Movie) - A movie can appear in 0 or more watchlists.
+    \end{itemize}      
+    \item Mandatory: \texttt{watchlist\_id} NOT NULL, \texttt{movie\_id} NOT NULL.
+    \item Deleting: \texttt{watchlist\_id} CASCADE - Deleting a watchlist removes relationships with movies in that particular watchlist. \texttt{movie\_id} CASCADE - Deleting a movie removes it from every watchlist. 
 \end{itemize}
 
 \subsubsection{Movie and Rating}
@@ -558,7 +566,7 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
     \item Relationship type: 1:N - Movie can be rated multiple times. A primary key from table Movie can appear multiple times as a foreign key in table Rating.
     \item Cardinality: 1 (Movie) 0..* (Rating) - Movie can have 0 or more ratings.
     \item Mandatory: \texttt{movie\_id} NOT NULL - Rating must belong to a movie.
-    \item Deleting: \texttt{movie\_id}: CASCADE - Deleting a movie removes all its ratings. 
+    \item Deleting: \texttt{movie\_id} CASCADE - Deleting a movie removes all its ratings. 
 \end{itemize}
 
 \subsubsection{Movie and Review}
@@ -566,7 +574,31 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
     \item Relationship type: 1:N - Movie can be reviewed multiple times. A primary key from table Movie can appear multiple times as a foreign key in table Review.
     \item Cardinality: 1 (Movie) 0..* (Review) - Movie can have 0 or more reviews.
     \item Mandatory: \texttt{movie\_id} NOT NULL - Review must belong to a movie.
-    \item Deleting: \texttt{movie\_id}: CASCADE - Deleting a movie removes all its reviews. 
+    \item Deleting: \texttt{movie\_id} CASCADE - Deleting a movie removes all its reviews. 
+\end{itemize}
+
+\subsubsection{Movie and Genre}
+\begin{itemize}
+    \item Relationship type: M:N - A movie can have multiple genres and multiple movies can have same genres. This relationship is realized by using junction table MovieGenre.
+    \item Cardinality: 
+    \begin{itemize}
+        \item 1 (Genre) 0..* (MovieGenre) 
+        \item 1..* (MovieGenre) 1 (Movie) - Movie has to have at least one genre.
+    \end{itemize}
+    \item Mandatory: \texttt{movie\_id} NOT NULL, \texttt{genre\_id} NOT NULL.
+    \item Deleting: \texttt{movie\_id} CASCADE - Deleting a movie removes relationships with its genres. \texttt{genre\_id} CASCADE - Deleting a genre removes its relationships with every movie. 
+\end{itemize}
+
+\subsubsection{Movie and Person}
+\begin{itemize}
+    \item Relationship type: M:N - A movie can have multiple directors, writers, actors and they can be part of multiple movies. This relationship is realized by using junction table MoviePerson.
+    \item Cardinality: 
+    \begin{itemize}
+        \item 1 (Person) 0..* (MoviePerson) 
+        \item 0..* (MoviePerson) 1 (Movie)
+    \end{itemize}
+    \item Mandatory: \texttt{movie\_id} NOT NULL, \texttt{person\_id} NOT NULL.
+    \item Deleting: \texttt{movie\_id} CASCADE - Deleting a movie removes relationships with people in that movie. \texttt{person\_id} CASCADE - Deleting a person removes its relationships with every movie. 
 \end{itemize}
 
 
