@@ -316,17 +316,17 @@ shares it publicly.
 
 \noindent\textbf{Attributes:}
 \begin{itemize}
-    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
+    \item \texttt{id}: SERIAL, PRIMARY KEY % v postgreSQL serial == integer auto increment
     \item \texttt{first\_name}: VARCHAR(50), NOT NULL
     \item \texttt{last\_name}: VARCHAR(50), NOT NULL
     \item \texttt{username}: VARCHAR(30), NOT NULL, UNIQUE
     \item \texttt{email}: VARCHAR(254), NOT NULL, UNIQUE
-    \item \texttt{password\_hash}: VARCHAR(255), NOT NULL
+    \item \texttt{password\_hash}: VARCHAR(60), NOT NULL % bcrypt hash
     \item \texttt{role}: ENUM('user', 'admin'), NOT NULL, DEFAULT 'user'
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred over username or email because both, although unique, might be changed in the future.
+\noindent\textbf{Primary key:} Surrogate key \texttt{id}. A surrogate key is preferred over username or email because both, although unique, might be changed in the future.
 
 \noindent\textbf{Foreign keys:} None.
 
@@ -336,16 +336,16 @@ shares it publicly.
 
 \noindent\textbf{Attributes:}
 \begin{itemize}
-    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
+    \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{title}: VARCHAR(200), NOT NULL
     \item \texttt{release\_year}: INTEGER, NOT NULL, CHECK (release\_year >= 1888 AND release\_year <= 2030)
     \item \texttt{runtime\_minutes}: INTEGER, CHECK (runtime\_minutes > 0)
-    \item \texttt{average\_rating}: DECIMAL(3,1), DEFAULT NULL, CHECK (average\_rating >= 0 AND average\_rating <= 10)
+    \item \texttt{average\_rating}: NUMERIC(3,1), DEFAULT NULL, CHECK (average\_rating >= 0 AND average\_rating <= 10)
     \item \texttt{total\_ratings}: INTEGER, NOT NULL, CHECK (total\_ratings >= 0), DEFAULT 0
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred over the combination of title and release year, because title can be very long and id is more efficient for indexing.
+\noindent\textbf{Primary key:} Surrogate key \texttt{id}. An artificial key is preferred over the combination of title and release year, because title can be lenghty and id is more efficient for indexing.
 
 \noindent\textbf{Foreign keys:} None.
 
@@ -355,13 +355,13 @@ shares it publicly.
 
 \noindent\textbf{Attributes:}
 \begin{itemize}
-    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
+    \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{first\_name}: VARCHAR(50), NOT NULL
     \item \texttt{last\_name}: VARCHAR(50), NOT NULL
     \item \texttt{birth\_year}: INTEGER, NULL, CHECK (birth\_year >= 1800 AND birth\_year <= 2010)
 \end{itemize}
 
-\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). An artificial key is preferred because multiple people can share the same name.
+\noindent\textbf{Primary key:} Surrogate key \texttt{id}. A surrogate key is preferred because multiple people can share the same name.
 
 \noindent\textbf{Foreign keys:} None.
 
@@ -371,14 +371,14 @@ shares it publicly.
 
 \noindent\textbf{Attributes:}
 \begin{itemize}
-    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
-    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES User(id)
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Movie(id)
+    \item \texttt{id}: SERIAL, PRIMARY KEY
+    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{score}: INTEGER, NOT NULL, CHECK (score >= 1 AND score <= 10)
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). Although the combination (\texttt{user\_id}, \texttt{movie\_id}) could serve as a natural primary key, an artificial key is more efficient for indexing.
+\noindent\textbf{Primary key:} Surrogate key \texttt{id}. Although the combination (\texttt{user\_id}, \texttt{movie\_id}) could serve as a natural primary key, a surrogate key is more efficient for indexing.
 
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
@@ -392,15 +392,15 @@ shares it publicly.
 
 \noindent\textbf{Attributes:}
 \begin{itemize}
-    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
-    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES User(id)
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Movie(id)
+    \item \texttt{id}: SERIAL, PRIMARY KEY
+    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{title}: VARCHAR(200), NOT NULL
     \item \texttt{content}: TEXT, NOT NULL, CHECK (LENGTH(content) >= 50)
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). Each review is a unique record identified by a numeric ID.
+\noindent\textbf{Primary key:} Surrogate key \texttt{id}. Each review is a unique record identified by a numeric ID.
 
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
@@ -414,20 +414,33 @@ shares it publicly.
 
 \noindent\textbf{Attributes:}
 \begin{itemize}
-    \item \texttt{id}: INTEGER, AUTO\_INCREMENT, PRIMARY KEY
-    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES User(id)
+    \item \texttt{id}: SERIAL, PRIMARY KEY
+    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{name}: VARCHAR(100), NOT NULL
     \item \texttt{description}: TEXT, NULL
     \item \texttt{is\_public}: BOOLEAN, NOT NULL, DEFAULT TRUE
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Artificial key \texttt{id} (AUTO\_INCREMENT). Each list is a unique entity owned by a user.
+\noindent\textbf{Primary key:} Surrogate key \texttt{id}. User can have multiple watchlists, so surrogate key works as unique identificator.
 
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{user\_id} REFERENCES \texttt{User(id)}: ON DELETE CASCADE
 \end{itemize}
+
+\subsubsection{Genre}
+
+\noindent\textbf{Purpose:} Lookup table for genre names.
+
+\noindent\textbf{Attributes:}
+\begin{itemize}
+    \item \texttt{id}: SERIAL, PRIMARY KEY
+    \item \texttt{name}: VARCHAR(30), NOT NULL, UNIQUE
+\end{itemize}
+
+\noindent\textbf{Primary key:} Surrogate key \texttt{id}. Although genre name is unique and could serve as a primary key, a surrogate key works better in a junction table which connects movies and genres together.
+\noindent\textbf{Foreign keys:} None.
 
 \subsubsection{MovieGenre}
 
@@ -435,11 +448,11 @@ shares it publicly.
 
 \noindent\textbf{Attributes:}
 \begin{itemize}
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Movie(id)
-    \item \texttt{genre\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Genre(id)
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
+    \item \texttt{genre\_id}: INTEGER, NOT NULL, FOREIGN KEY
 \end{itemize}
 
-\noindent\textbf{Primary key:} %asi (movie_id, genre_id)
+\noindent\textbf{Primary key:} Composite key (\texttt{movie\_id}, \texttt{genre\_id}). 
 
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
@@ -453,12 +466,12 @@ shares it publicly.
 
 \noindent\textbf{Attributes:}
 \begin{itemize}
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Movie(id)
-    \item \texttt{person\_id}: INTEGER, NOT NULL, FOREIGN KEY, REFERENCES Person(id)
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
+    \item \texttt{person\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{role}: ENUM('actor', 'director', 'writer'), NOT NULL
 \end{itemize}
 
-\noindent\textbf{Primary key:} %asi (movie_id, person_id, role)
+\noindent\textbf{Primary key:} Composite key (\texttt{movie\_id}, \texttt{person\_id}, \texttt{role}). Role is included in composite key as the same person can be a director and an actor in the same movie.
 
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
@@ -474,12 +487,9 @@ multiple movies, and a single movie to appear in multiple watchlists.
 
 \noindent\textbf{Attributes:}
 \begin{itemize}
-    \item \texttt{watchlist\_id}: INTEGER, NOT NULL, FOREIGN KEY,
-          REFERENCES Watchlist(id)
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY,
-          REFERENCES Movie(id)
-    \item \texttt{added\_at}: TIMESTAMP, NOT NULL,
-          DEFAULT CURRENT\_TIMESTAMP
+    \item \texttt{watchlist\_id}: INTEGER, NOT NULL, FOREIGN KEY
+    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
+    \item \texttt{added\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
 \noindent\textbf{Primary key:}
@@ -494,67 +504,41 @@ multiple movies, and a single movie to appear in multiple watchlists.
 \end{itemize}
 
 
-\newpage
-\section{Implementation}
-\label{sec:implementation}
+\subsection{Table relationships}
 
-The template lives in a simple directory structure with localization files
-separated from the main document. Switching language requires changing one
-line:
+\subsubsection{User and Rating}
+\begin{itemize}
+    \item Relationship type: 1:N - User can rate multiple movies. A primary key from table User can appear multiple times as foreign key in table Rating.
+    \item Cardinality: 1 (User) 0..* (Rating) - User can rate 0 or more movies.
+    \item Mandatory: \texttt{user_id} NOT NULL - Rating must belong to a user.
+    \item Deleting: \texttt{user_id}: CASCADE - Deleting a user removes all his ratings. %mozno dat SET NULL
+\end{itemize}
 
-\begin{lstlisting}[language=TeX, caption={Switching language in the preamble}]
-% English
-\input{lang/en}
+\subsubsection{User and Review}
+\begin{itemize}
+    \item Relationship type: 1:N - User can review multiple movies. A primary key from table User can appear multiple times as foreign key in table Review.
+    \item Cardinality: 1 (User) 0..* (Review) - User can review 0 or more movies.
+    \item Mandatory: \texttt{user_id} NOT NULL - Review must belong to a user.
+    \item Deleting: \texttt{user_id}: CASCADE - Deleting a user removes all his reviews. 
+\end{itemize}
 
-% Slovak
-\input{lang/sk}
-\end{lstlisting}
+\subsubsection{User and Watchlist}
+\begin{itemize}
+    \item Relationship type: M:N - User can create multiple watchlists and share them among friends. Watchlist can have multiple owners. This relationship is realized by using junction table WatchlistUser.
+    \item Cardinality: 1 (User) 0..* (WatchlistUser), 1..* (WatchlistUser) 1 (Watchlist), - User can own 0 or more watchlists. Watchlist has to have at least one owner.
+    \item Mandatory: \texttt{user_id} NOT NULL, \texttt{watchlist_id} NOT NULL. A row with one of these values as NULL would not make sense.
+    \item Deleting: \texttt{user_id}: CASCADE - Deleting a user removes all his relationships with watchlists. \texttt{watchlist_id}: CASCADE - Deleting a watchlist removes all relationships with users.
+\end{itemize}
 
-For SQL or other languages, change the \texttt{language} parameter:
-
-\begin{lstlisting}[language=SQL, caption={Example SQL query}]
-SELECT s.name, COUNT(*) AS submission_count
-FROM students s
-JOIN submissions sub ON s.id = sub.student_id
-GROUP BY s.name
-ORDER BY submission_count DESC;
-\end{lstlisting}
-
-References to tables, figures, and sections are automatic. For example,
-this is Section~\ref{sec:implementation}, and the faculty logo is shown in
-Figure~\ref{fig:logo} in Attachment~\ref{sec:attachment-a1}.
-If you add or reorder content, the numbers update on the next build.
-
-The database fundamentals referenced throughout the course are covered
-in \cite{elmasri2016}. For PostgreSQL-specific syntax, see
-\cite{postgresql-docs}.
-
-
-\newpage
-\section{Challenges}
-\label{sec:challenges}
-
-The main challenge was keeping the template simple enough that a student
-seeing \LaTeX{} for the first time would not immediately close the file.
-We solved this by limiting the preamble to essential packages and
-putting all examples in one place --- this document.
-
-We also learned that BibTeX interprets \texttt{@} signs in comments as
-entry types, which caused confusing errors. Small things like this are
-easy to fix once you know about them, but hard to debug the first time.
+\subsubsection{Watchlist and Movie}
+\begin{itemize}
+    \item Relationship type: M:N - Watchlist can have multiple movies. A movie can appear in multiple watchlists. This relationship is realized by using junction table WatchlistMovie.
+    \item Cardinality: 1 (Watchlist) 0..* (WatchlistMovie), 0..* (WatchlistMovie) 1 (Movie) - Watchlist can consist of 0 or more movies. A movie can appear in 0 or more watchlists.     
+    \item Mandatory: \texttt{watchlist_id} NOT NULL, \texttt{movie_id} NOT NULL. A row with one of these values as NULL would not make sense.
+    \item Deleting: \texttt{watchlist_id}: CASCADE - Deleting a watchlist removes relationships with movies in that particular watchlist. \texttt{movie_id}: CASCADE - Deleting a movie removes it from every watchlist. 
+\end{itemize}
 
 
-\newpage
-\section{Conclusion}
-\label{sec:conclusion}
-
-The template meets the requirements from the specification.
-It compiles with a standard \LaTeX{} distribution, supports two
-languages, and provides working examples of every feature students
-are likely to need.
-
-For anything not covered here, the Overleaf documentation
-\cite{overleaf-docs} is an excellent reference.
 
 % ─── Bibliography ────────────────────────────────────────────────────────────
 \printbibliography
