@@ -415,7 +415,6 @@ shares it publicly.
 \noindent\textbf{Attributes:}
 \begin{itemize}
     \item \texttt{id}: SERIAL, PRIMARY KEY
-    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{name}: VARCHAR(100), NOT NULL
     \item \texttt{description}: TEXT
     \item \texttt{is\_public}: BOOLEAN, NOT NULL, DEFAULT TRUE
@@ -424,10 +423,7 @@ shares it publicly.
 
 \noindent\textbf{Primary key:} Surrogate key \texttt{id}. User can have multiple watchlists, so surrogate key works as unique identificator.
 
-\noindent\textbf{Foreign keys:}
-\begin{itemize}
-    \item \texttt{user\_id} REFERENCES \texttt{User(id)}
-\end{itemize}
+\noindent\textbf{Foreign keys:} None.
 
 \subsubsection{Genre}
 
@@ -492,7 +488,7 @@ multiple movies and a single movie to appear in multiple watchlists.
     \item \texttt{added\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:}
+\noindent\textbf{Primary key:} Composite key (\texttt{watchlist_id}, \texttt{movie_id})
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
@@ -507,15 +503,15 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
 \noindent\textbf{Attributes:}
 \begin{itemize}
     \item \texttt{watchlist\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
+    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{added\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:}
+\noindent\textbf{Primary key:} Composite key (\texttt{watchlist_id}, \texttt{user_id})
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
-    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}
+    \item \texttt{user\_id} REFERENCES \texttt{User(id)}
 \end{itemize}
 
 
