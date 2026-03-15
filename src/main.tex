@@ -85,7 +85,24 @@
 \label{sec:specification}
 
 \subsection{Problem despription}
+The film portal is a web-based information system designed for movie
+enthusiasts who want to discover, evaluate, and discuss films in one
+place. The system addresses the need for a centralised platform where
+users can browse a structured movie catalogue enriched with
+community-driven content --- ratings, written reviews, and curated
+watchlists.
 
+The primary added value lies in the combination of an administrator-maintained
+movie catalogue and active user participation. Unlike a static database,
+the portal allows registered users to express opinions, track movies they
+plan to watch, and share personalised lists with others. This creates a
+self-improving information system where the relevance and quality of content
+grows with the number of active contributors.
+
+The system must guarantee fairness of user contributions --- a single user
+cannot rate or review the same movie more than once, preventing manipulation
+of average scores. It must also protect the integrity of the catalogue by
+rejecting duplicate movie entries and enforcing realistic metadata values.
 \subsection{Actors}
 
 \begin{enumerate}
@@ -102,7 +119,7 @@
         \item Can write reviews
         \item Can create watchlists and share them amongst other users
     \end{itemize}
-    \item Moderator
+
     \item Administrator
     \begin{itemize}
         \item Has all moderator's rights
@@ -114,13 +131,31 @@
 \subsection{Key entities}
 
 \begin{enumerate}
-    \item Movie
-    \item User
-    \item Review
-    \item Rating
-    \item Watchlist
-    \item Genre
-    \item Person
+    \item \textbf{Movie} --- The central entity of the system. Stores
+    metadata about a film including title, release year, runtime, and
+    aggregated rating statistics.
+
+    \item \textbf{User} --- Represents a registered account. All
+    community content --- ratings, reviews, and watchlists --- is tied
+    to a specific user.
+
+    \item \textbf{Review} --- A textual evaluation of a movie submitted
+    by a registered user, contributing informational value beyond a
+    numerical score.
+
+    \item \textbf{Rating} --- A numerical score (0--10) assigned to a
+    movie by a registered user. Drives the average rating used in
+    filtering and discovery.
+
+    \item \textbf{Watchlist} --- A named collection of movies created
+    by a user, kept private or shared publicly with others.
+
+    \item \textbf{Genre} --- A classification label stored in a lookup
+    table to ensure consistent categorisation across the catalogue.
+
+    \item \textbf{Person} --- A real-world individual involved in a
+    movie as a director, writer, or actor. Enables filtering by people
+    behind the films.
 \end{enumerate}
 
 \subsection{Business rules and constraints}
