@@ -36,7 +36,7 @@
 % ─── Student details ─────────────────────────────────────────────────────────
 \newcommand{\StudentName}{Matej Straka, Michal Novick\'{y}}
 \newcommand{\StudyGroup}{Thursday 9:00}
-\newcommand{\AssignmentNumber}{67}
+\newcommand{\AssignmentNumber}{1}
 \newcommand{\AssignmentTitle}{Filmov\'{y} port\'{a}l}
 \newcommand{\AcademicYear}{2025/2026}
 
@@ -89,7 +89,7 @@ The film portal is a web-based information system designed for movie
 enthusiasts who want to discover, evaluate, and discuss films in one
 place. The system addresses the need for a centralised platform where
 users can browse a structured movie catalogue enriched with
-community-driven content --- ratings, written reviews, and curated
+community-driven content - ratings, written reviews, and curated
 watchlists.
 
 The primary added value lies in the combination of an administrator-maintained
@@ -99,7 +99,7 @@ plan to watch, and share personalised lists with others. This creates a
 self-improving information system where the relevance and quality of content
 grows with the number of active contributors.
 
-The system must guarantee fairness of user contributions --- a single user
+The system must guarantee fairness of user contributions - a single user
 cannot rate or review the same movie more than once, preventing manipulation
 of average scores. It must also protect the integrity of the catalogue by
 rejecting duplicate movie entries and enforcing realistic metadata values.
@@ -131,29 +131,29 @@ rejecting duplicate movie entries and enforcing realistic metadata values.
 \subsection{Key entities}
 
 \begin{enumerate}
-    \item \textbf{Movie} --- The central entity of the system. Stores
+    \item \textbf{Movie} - The central entity of the system. Stores
     metadata about a film including title, release year, runtime, and
     aggregated rating statistics.
 
-    \item \textbf{User} --- Represents a registered account. All
+    \item \textbf{User} - Represents a registered account. All
     community content --- ratings, reviews, and watchlists --- is tied
     to a specific user.
 
-    \item \textbf{Review} --- A textual evaluation of a movie submitted
+    \item \textbf{Review} - A textual evaluation of a movie submitted
     by a registered user, contributing informational value beyond a
     numerical score.
 
-    \item \textbf{Rating} --- A numerical score (0--10) assigned to a
+    \item \textbf{Rating} - A numerical score (0--10) assigned to a
     movie by a registered user. Drives the average rating used in
     filtering and discovery.
 
-    \item \textbf{Watchlist} --- A named collection of movies created
+    \item \textbf{Watchlist} - A named collection of movies created
     by a user, kept private or shared publicly with others.
 
-    \item \textbf{Genre} --- A classification label stored in a lookup
+    \item \textbf{Genre} - A classification label stored in a lookup
     table to ensure consistent categorisation across the catalogue.
 
-    \item \textbf{Person} --- A real-world individual involved in a
+    \item \textbf{Person} - A real-world individual involved in a
     movie as a director, writer, or actor. Enables filtering by people
     behind the films.
 \end{enumerate}
@@ -256,13 +256,8 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
         \item User adjusts the filters
     \end{itemize}
 \end{enumerate}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{../assets/Diagram1}
-    \caption{Activity diagram -- Searching and filtering movies}
-    \label{fig:diagram1}
-\end{figure}
-\newpage
+
+The activity diagram for this use case is shown in Figure~\ref{fig:diagram1}. 
 \subsection{Adding a Movie (Administrator)}
 
 An administrator adds a new movie entry to the portal, including its
@@ -305,13 +300,8 @@ metadata, genres, and cast.
         \item Administrator corrects the values and resubmits
     \end{itemize}
 \end{enumerate}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{../assets/Diagram2}
-    \caption{Activity diagram -- Adding a movie (Administrator)}
-    \label{fig:diagram2}
-\end{figure}
-\newpage
+
+The activity diagram for this use case is shown in Figure~\ref{fig:diagram2}.
 \subsection{Rating a Movie}
 
 A registered user submits a numerical rating (0 to 10) for a movie they
@@ -349,13 +339,8 @@ have watched.
     \end{itemize}
 \end{enumerate}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{../assets/Diagram3}
-    \caption{Activity diagram -- Rating a movie}
-    \label{fig:diagram3}
-\end{figure}
-\newpage
+
+The activity diagram for this use case is shown in Figure~\ref{fig:diagram3}.
 \subsection{Creating and Managing a Watchlist}
 
 A registered user creates a watchlist, adds movies to it, and optionally
@@ -396,13 +381,8 @@ shares it publicly.
               the list
     \end{itemize}
 \end{enumerate}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{../assets/Diagram4}
-    \caption{Activity diagram -- Creating and managing a watchlist}
-    \label{fig:diagram4}
-\end{figure}
-\newpage
+
+The activity diagram for this use case is shown in Figure~\ref{fig:diagram4}.
 
 \section{Relational Model Design}
 
@@ -707,18 +687,46 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
 \newpage
 \appendix
 
-\section{Sample figures}
-\label{sec:attachment-a1}
+\section{Activity diagrams}
+\label{sec:attachment-diagrams}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.25\textwidth]{../assets/logo}
-    \caption{Faculty logo used on the cover page}
-    \label{fig:logo}
+    \includegraphics[width=0.85\textwidth]{../assets/Diagram1}
+    \caption{Activity diagram - Searching and filtering movies}
+    \label{fig:diagram1}
 \end{figure}
 
-Place your diagrams, screenshots, and other supporting images in this
-section. Reference them from the main text using
-\texttt{Figure\~{}\textbackslash ref\{fig:logo\}}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{../assets/Diagram2}
+    \caption{Activity diagram - Adding a movie (Administrator)}
+    \label{fig:diagram2}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{../assets/Diagram3}
+    \caption{Activity diagram - Rating a movie}
+    \label{fig:diagram3}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{../assets/Diagram4}
+    \caption{Activity diagram - Creating and managing a watchlist}
+    \label{fig:diagram4}
+\end{figure}
+
+\newpage
+\section{Relational model diagram}
+\label{sec:attachment-model}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../assets/Model}
+    \caption{Physical relational model - Film portal}
+    \label{fig:model}
+\end{figure}
 
 \end{document}
