@@ -123,27 +123,70 @@
     \item Person
 \end{enumerate}
 
-\subsection{Business rules and restrictions}
+\subsection{Business rules and constraints}
 
 \begin{enumerate}
-    \item \textbf{Rating uniqueness}
-    One user can rate a movie just once. This also includes that only registered users can rate a movie.
+    \item \textbf{Rating and review uniqueness}
+    One user can rate or review a movie just once. This also includes that only registered users can rate or review a movie.
     \begin{itemize}
-        \item Integrity constraint: UNIQUE constraint on (\texttt{user\_id}, \texttt{movie\_id}) in Rating table
-        \item Integrity constraint: NOT NULL foreign key on \texttt{user\_id} in Rating table
-        \item Reason: Prevents duplicate ratings that would skew the average score
+        \item Integrity constraint: UNIQUE constraint (\texttt{user\_id}, \texttt{movie\_id}) in \texttt{Rating} and \texttt{Review} table
+        \item Reason: Prevents duplicate ratings that would manipulate the average score
     \end{itemize}
     \item \textbf{Movie uniqueness}
     Combination of title and release year must be unique for every movie to prevent duplicate entries.
     \begin{itemize}
-        \item Integrity constraint: UNIQUE constraint on (\texttt{title}, \texttt{release\_year}) in Movie table
+        \item Integrity constraint: UNIQUE constraint (\texttt{title}, \texttt{release\_year}) in \texttt{Movie} table
         \item Reason: The same movie with the same release year cannot be added twice
     \end{itemize}
     \item \textbf{Valid release year}
     Movie release year must be realistic.
     \begin{itemize}
-        \item Integrity constraint: CHECK constraint (\texttt{release\_year} >= 1888 AND \texttt{release\_year} <= 2100)
-        \item Reason: The first movie was filmed in 1888, the upper limit protects against input errors
+        \item Integrity constraint: CHECK constraint (\texttt{release\_year} >= 1888 AND \texttt{release\_year} <= 2040) in table \texttt{Movie}
+        \item Reason: The first movie was filmed in 1888, the upper limit allows to add movies which are not released yet
+    \end{itemize}
+    \item \textbf{No duplicate movies in a watchlist}
+    The same movie cannot appear multiple times in a single watchlist.
+    \begin{itemize}
+        \item Integrity constraint: PRIMARY KEY (\texttt{watchlist\_id}, \texttt{movie\_id}) in \texttt{WatchlistMovie} table
+    \end{itemize}
+    \item \textbf{Minimum review length}
+    A review must contain a meaningful content body with length of 50 or more characters.
+    \begin{itemize}
+        \item Integrity constraint: CHECK constraint (LENGTH(\texttt{content}) >= 50) in \texttt{Review} table
+        \item Reason: Prevents spam reviews, improves overall quality of content on the portal
+    \end{itemize}
+    \item \textbf{Movie limit in a watchlist}
+    A watchlist can store up to maximum of 100 movies.
+    \begin{itemize}
+        \item Integrity constraint: Can be implemented through trigger function, which checks number of rows in a watchlist before inserting new row.
+        \item Reason: To prevent watchlists from having large amount of movies.
+    \end{itemize}
+    \item \textbf{Rating values}
+    A rating must be an integer value ranging from 0 to 10.
+    \begin{itemize}
+        \item Integrity constraint: INTEGER data type and CHECK constraint (\texttt{score} >= 0 AND \texttt{score} <= 10) in table \texttt{Rating}
+        \item Reason: To prevent negative or large score amounts from manipulating the average score
+    \end{itemize}
+    \item \textbf{Birth year of people featured in movies}
+    Birth year of every actor, writer and director must be valid.
+    \begin{itemize}
+        \item Integrity constraint: CHECK constraint (\texttt{birth\_year} >= 1800 AND \texttt{birth\_year} <= 2026) in table \texttt{Person}
+    \end{itemize}
+    \item \textbf{Username and e-mail uniqueness}
+    Username and e-mail must be unique for every user.
+    \begin{itemize}
+        \item Integrity constraint: UNIQUE constraint on \texttt{username} and \texttt{email} in \texttt{User} table
+    \end{itemize}
+    \item \textbf{Total amount of ratings and review}
+    The total amount of ratings and reviews must be a positive integer value.
+    \begin{itemize}
+        \item Integrity constraint: CHECK constraint (\texttt{total\_ratings} >= 0) in \texttt{Movie} table
+        \item Integrity constraint: CHECK constraint (\texttt{total\_reviews} >= 0) in \texttt{Movie} table
+    \end{itemize}
+    \item \textbf{Average rating value}
+    The average rating value must be in range from 0 to 10.
+    \begin{itemize}
+        \item Integrity constraint: CHECK constraint (\texttt{average\_rating} >= 0 AND \texttt{average\_rating} <= 10) in \texttt{Movie} table
     \end{itemize}
 \end{enumerate}
 
@@ -338,10 +381,11 @@ shares it publicly.
 \begin{itemize}
     \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{title}: VARCHAR(200), NOT NULL
-    \item \texttt{release\_year}: INTEGER, NOT NULL, CHECK (release\_year >= 1888 AND release\_year <= 2030)
+    \item \texttt{release\_year}: INTEGER, NOT NULL, CHECK (release\_year >= 1888 AND release\_year <= 2040)
     \item \texttt{runtime\_minutes}: INTEGER, CHECK (runtime\_minutes > 0)
     \item \texttt{average\_rating}: NUMERIC(3,1), DEFAULT NULL, CHECK (average\_rating >= 0 AND average\_rating <= 10)
     \item \texttt{total\_ratings}: INTEGER, NOT NULL, CHECK (total\_ratings >= 0), DEFAULT 0
+    \item \texttt{total\_reviews}: INTEGER, NOT NULL, CHECK (total\_reviews >= 0), DEFAULT 0
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
@@ -358,7 +402,7 @@ shares it publicly.
     \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{first\_name}: VARCHAR(50), NOT NULL
     \item \texttt{last\_name}: VARCHAR(50), NOT NULL
-    \item \texttt{birth\_year}: INTEGER, NOT NULL, CHECK (birth\_year >= 1800 AND birth\_year <= 2010)
+    \item \texttt{birth\_year}: INTEGER, NOT NULL, CHECK (birth\_year >= 1800 AND birth\_year <= 2026)
 \end{itemize}
 
 \noindent\textbf{Primary key:} Surrogate key \texttt{id}. A surrogate key is preferred because multiple people can share the same name.
@@ -374,8 +418,9 @@ shares it publicly.
     \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{score}: INTEGER, NOT NULL, CHECK (score >= 1 AND score <= 10)
+    \item \texttt{score}: INTEGER, NOT NULL, CHECK (score >= 0 AND score <= 10)
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
+    \item UNIQUE (\texttt{user\_id}, \texttt{movie\_id})
 \end{itemize}
 
 \noindent\textbf{Primary key:} Surrogate key \texttt{id}. Although the combination (\texttt{user\_id}, \texttt{movie\_id}) could serve as a natural primary key, a surrogate key is more efficient for indexing.
@@ -398,6 +443,7 @@ shares it publicly.
     \item \texttt{title}: VARCHAR(200), NOT NULL
     \item \texttt{content}: TEXT, NOT NULL, CHECK (LENGTH(content) >= 50)
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
+    \item UNIQUE (\texttt{user\_id}, \texttt{movie\_id})
 \end{itemize}
 
 \noindent\textbf{Primary key:} Surrogate key \texttt{id}. Each review is a unique record identified by a numeric ID.
@@ -421,7 +467,7 @@ shares it publicly.
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Surrogate key \texttt{id}. User can have multiple watchlists, so surrogate key works as unique identificator.
+\noindent\textbf{Primary key:} Surrogate key \texttt{id}. Works as a unique identificator of a watchlist, which can have one or multiple owners.
 
 \noindent\textbf{Foreign keys:} None.
 
@@ -488,7 +534,7 @@ multiple movies and a single movie to appear in multiple watchlists.
     \item \texttt{added\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Composite key (\texttt{watchlist_id}, \texttt{movie_id})
+\noindent\textbf{Primary key:} Composite key (\texttt{watchlist_id}, \texttt{movie_id}).
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
@@ -507,7 +553,7 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
     \item \texttt{added\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Composite key (\texttt{watchlist_id}, \texttt{user_id})
+\noindent\textbf{Primary key:} Composite key (\texttt{watchlist_id}, \texttt{user_id}).
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
