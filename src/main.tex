@@ -245,7 +245,16 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \item System creates SQL query and applies it onto the database
     \item System shows filtered movies
 \end{enumerate}
-
+\noindent\textbf{Data layer:}
+\begin{itemize}
+    \item SELECT on \texttt{Movie} with JOIN to \texttt{MovieGenre},
+          \texttt{Genre}, \texttt{MoviePerson}, and \texttt{Person}
+          based on selected filters
+    \item WHERE clause filters by genre, release year, rating, director,
+          or actor depending on user input
+    \item ORDER BY clause applied based on chosen sorting option
+    \item Returns a filtered and sorted list of matching movies
+\end{itemize}
 \noindent\textbf{Alternate flows:}
 
 \begin{enumerate}
