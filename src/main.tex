@@ -530,7 +530,7 @@ multiple movies and a single movie to appear in multiple watchlists.
     \item \texttt{added\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Composite key (\texttt{watchlist_id}, \texttt{movie_id}).
+\noindent\textbf{Primary key:} Composite key (\texttt{watchlist\_id}, \texttt{movie\_id}).
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
@@ -549,7 +549,7 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
     \item \texttt{added\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
 \end{itemize}
 
-\noindent\textbf{Primary key:} Composite key (\texttt{watchlist_id}, \texttt{user_id}).
+\noindent\textbf{Primary key:} Composite key (\texttt{watchlist\_id}, \texttt{user\_id}).
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
