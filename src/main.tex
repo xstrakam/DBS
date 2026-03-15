@@ -161,64 +161,64 @@ rejecting duplicate movie entries and enforcing realistic metadata values.
 \subsection{Business rules and constraints}
 
 \begin{enumerate}
-    \item \textbf{Rating and review uniqueness}
+    \item \textbf{Rating and review uniqueness: }
     One user can rate or review a movie just once. This also includes that only registered users can rate or review a movie.
     \begin{itemize}
         \item Integrity constraint: UNIQUE constraint (\texttt{user\_id}, \texttt{movie\_id}) in \texttt{Rating} and \texttt{Review} tables
         \item Reason: Prevents duplicate ratings that would manipulate the average score
     \end{itemize}
-    \item \textbf{Movie uniqueness}
+    \item \textbf{Movie uniqueness: }
     Combination of title and release year must be unique for every movie to prevent duplicate entries.
     \begin{itemize}
         \item Integrity constraint: UNIQUE constraint (\texttt{title}, \texttt{release\_year}) in \texttt{Movie} table
         \item Reason: The same movie with the same release year cannot be added twice
     \end{itemize}
-    \item \textbf{Valid release year}
+    \item \textbf{Valid release year: }
     Movie release year must be realistic.
     \begin{itemize}
         \item Integrity constraint: CHECK constraint (\texttt{release\_year} >= 1888 AND \texttt{release\_year} <= 2040) in table \texttt{Movie}
         \item Reason: The first movie was filmed in 1888, the upper limit allows to add movies which are not released yet
     \end{itemize}
-    \item \textbf{No duplicate movies in a watchlist}
+    \item \textbf{No duplicate movies in a watchlist: }
     The same movie cannot appear multiple times in a single watchlist.
     \begin{itemize}
         \item Integrity constraint: PRIMARY KEY (\texttt{watchlist\_id}, \texttt{movie\_id}) in \texttt{WatchlistMovie} table
     \end{itemize}
-    \item \textbf{Minimum review length}
+    \item \textbf{Minimum review length: }
     A review must contain a meaningful content body with length of 50 or more characters.
     \begin{itemize}
         \item Integrity constraint: CHECK constraint (LENGTH(\texttt{content}) >= 50) in \texttt{Review} table
         \item Reason: Prevents spam reviews, improves overall quality of content on the portal
     \end{itemize}
-    \item \textbf{Movie limit in a watchlist}
+    \item \textbf{Movie limit in a watchlist: }
     A watchlist can store up to maximum of 100 movies.
     \begin{itemize}
         \item Integrity constraint: Can be implemented through trigger function, which checks number of rows in a watchlist before inserting new row.
         \item Reason: To prevent watchlists from having large amount of movies.
     \end{itemize}
-    \item \textbf{Rating values}
+    \item \textbf{Rating values: }
     A rating must be an integer value ranging from 0 to 10.
     \begin{itemize}
         \item Integrity constraint: INTEGER data type and CHECK constraint (\texttt{score} >= 0 AND \texttt{score} <= 10) in table \texttt{Rating}
         \item Reason: To prevent negative or large score amounts from manipulating the average score
     \end{itemize}
-    \item \textbf{Birth year of people featured in movies}
+    \item \textbf{Birth year of people featured in movies: }
     Birth year of every actor, writer and director must be valid.
     \begin{itemize}
         \item Integrity constraint: CHECK constraint (\texttt{birth\_year} >= 1800 AND \texttt{birth\_year} <= 2026) in table \texttt{Person}
     \end{itemize}
-    \item \textbf{Username and e-mail uniqueness}
+    \item \textbf{Username and e-mail uniqueness: }
     Username and e-mail must be unique for every user.
     \begin{itemize}
         \item Integrity constraint: UNIQUE constraint on \texttt{username} and \texttt{email} in \texttt{User} table
     \end{itemize}
-    \item \textbf{Total amount of ratings and reviews}
+    \item \textbf{Total amount of ratings and reviews: }
     The total amount of ratings and reviews must be a positive integer value.
     \begin{itemize}
         \item Integrity constraint: CHECK constraint (\texttt{total\_ratings} >= 0) in \texttt{Movie} table
         \item Integrity constraint: CHECK constraint (\texttt{total\_reviews} >= 0) in \texttt{Movie} table
     \end{itemize}
-    \item \textbf{Average rating value}
+    \item \textbf{Average rating value: }
     The average rating value must be in range from 0 to 10.
     \begin{itemize}
         \item Integrity constraint: CHECK constraint (\texttt{average\_rating} >= 0 AND \texttt{average\_rating} <= 10) in \texttt{Movie} table
@@ -235,7 +235,7 @@ rejecting duplicate movie entries and enforcing realistic metadata values.
 
 Visitor or registered user filters movies based on multiple criteria (genre, release year, rating, director, actors) and sorts them.
 
-\textbf{Main flow:}
+\noindent\textbf{Main flow:}
 
 \begin{enumerate}
     \item User opens search tab
@@ -246,7 +246,7 @@ Visitor or registered user filters movies based on multiple criteria (genre, rel
     \item System shows filtered movies
 \end{enumerate}
 
-\textbf{Alternate flows:}
+\noindent\textbf{Alternate flows:}
 
 \begin{enumerate}
     \item No results
@@ -263,7 +263,7 @@ The activity diagram for this use case is shown in Figure~\ref{fig:diagram1}.
 An administrator adds a new movie entry to the portal, including its
 metadata, genres, and cast.
 
-\textbf{Main flow:}
+\noindent\textbf{Main flow:}
 
 \begin{enumerate}
     \item Administrator navigates to the movie management section
@@ -278,14 +278,14 @@ metadata, genres, and cast.
     \item System confirms successful addition
 \end{enumerate}
 
-\textbf{Data layer:}
+\noindent\textbf{Data layer:}
 \begin{itemize}
     \item INSERT into \texttt{Movie} (\texttt{title}, \texttt{release\_year}, \texttt{runtime\_minutes})
     \item INSERT into \texttt{MovieGenre} for each selected genre
     \item INSERT into \texttt{MoviePerson} for each person with their role
 \end{itemize}
 
-\textbf{Alternate flows:}
+\noindent\textbf{Alternate flows:}
 \begin{enumerate}
     \item Duplicate movie
     \begin{itemize}
@@ -307,7 +307,7 @@ The activity diagram for this use case is shown in Figure~\ref{fig:diagram2}.
 A registered user submits a numerical rating (0 to 10) for a movie they
 have watched.
 
-\textbf{Main flow:}
+\noindent\textbf{Main flow:}
 
 \begin{enumerate}
     \item Registered user opens a movie detail page
@@ -319,14 +319,14 @@ have watched.
     \item Updated average rating is displayed on the movie page
 \end{enumerate}
 
-\textbf{Data layer:}
+\noindent\textbf{Data layer:}
 \begin{itemize}
     \item SELECT on \texttt{Rating} to check (\texttt{user\_id}, \texttt{movie\_id}) uniqueness
     \item INSERT into \texttt{Rating} (\texttt{user\_id}, \texttt{movie\_id}, \texttt{score})
     \item UPDATE \texttt{Movie} SET \texttt{average\_rating}, \texttt{total\_ratings}
 \end{itemize}
 
-\textbf{Alternate flows:}
+\noindent\textbf{Alternate flows:}
 \begin{enumerate}
     \item User already rated this movie
     \begin{itemize}
@@ -346,7 +346,7 @@ The activity diagram for this use case is shown in Figure~\ref{fig:diagram3}.
 A registered user creates a watchlist, adds movies to it, and optionally
 shares it publicly.
 
-\textbf{Main flow:}
+\noindent\textbf{Main flow:}
 
 \begin{enumerate}
     \item Registered user navigates to their profile and selects
@@ -356,22 +356,22 @@ shares it publicly.
     \item System inserts a new record into \texttt{Watchlist}
     \item User browses the movie catalogue and adds movies to the watchlist
     \item System inserts records into \texttt{WatchlistMovie}
-          (watchlist\_id, movie\_id)
+          (\texttt{watchlist\_id}, \texttt{movie\_id})
     \item If the watchlist is public, other users can view and browse it
 \end{enumerate}
 
-\textbf{Data layer:}
+\noindent\textbf{Data layer:}
 \begin{itemize}
-    \item INSERT into \texttt{Watchlist} (name, description,
-          is\_public)
-    \item INSERT into \texttt{WatchlistUser} (watchlist\_id, user\_id) to assign the owner
-    \item INSERT into \texttt{WatchlistMovie} (watchlist\_id, movie\_id)
+    \item INSERT into \texttt{Watchlist} (\texttt{name}, \texttt{description},
+          \texttt{is\_public})
+    \item INSERT into \texttt{WatchlistUser} (\texttt{watchlist\_id}, \texttt{user\_id}) to assign the owner
+    \item INSERT into \texttt{WatchlistMovie} (\texttt{watchlist\_id}, \texttt{movie\_id})
           for each added movie
-    \item SELECT on \texttt{Watchlist} WHERE is\_public = TRUE for
+    \item SELECT on \texttt{Watchlist} WHERE \texttt{is\_public} = TRUE for
           public browsing
 \end{itemize}
 
-\textbf{Alternate flows:}
+\noindent\textbf{Alternate flows:}
 \begin{enumerate}
     \item Movie already in watchlist
     \begin{itemize}
@@ -416,12 +416,13 @@ The activity diagram for this use case is shown in Figure~\ref{fig:diagram4}.
 \begin{itemize}
     \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{title}: VARCHAR(200), NOT NULL
-    \item \texttt{release\_year}: INTEGER, NOT NULL, CHECK (release\_year >= 1888 AND release\_year <= 2040)
-    \item \texttt{runtime\_minutes}: INTEGER, CHECK (runtime\_minutes > 0)
-    \item \texttt{average\_rating}: NUMERIC(3,1), DEFAULT NULL, CHECK (average\_rating >= 0 AND average\_rating <= 10)
-    \item \texttt{total\_ratings}: INTEGER, NOT NULL, CHECK (total\_ratings >= 0), DEFAULT 0
-    \item \texttt{total\_reviews}: INTEGER, NOT NULL, CHECK (total\_reviews >= 0), DEFAULT 0
+    \item \texttt{release\_year}: INTEGER, NOT NULL, CHECK (\texttt{release\_year} >= 1888 AND \texttt{release\_year} <= 2040)
+    \item \texttt{runtime\_minutes}: INTEGER, CHECK (\texttt{runtime\_minutes} > 0)
+    \item \texttt{average\_rating}: NUMERIC(3,1), DEFAULT NULL, CHECK (\texttt{average\_rating} >= 0 AND \texttt{average\_rating} <= 10)
+    \item \texttt{total\_ratings}: INTEGER, NOT NULL, CHECK (\texttt{total\_ratings} >= 0), DEFAULT 0
+    \item \texttt{total\_reviews}: INTEGER, NOT NULL, CHECK (\texttt{total\_reviews} >= 0), DEFAULT 0
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
+    \item UNIQUE (\texttt{title}, \texttt{release\_year})
 \end{itemize}
 
 \noindent\textbf{Primary key:} Surrogate key \texttt{id}. An artificial key is preferred over the combination of title and release year, because title can be lenghty and id is more efficient for indexing.
@@ -437,7 +438,7 @@ The activity diagram for this use case is shown in Figure~\ref{fig:diagram4}.
     \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{first\_name}: VARCHAR(50), NOT NULL
     \item \texttt{last\_name}: VARCHAR(50), NOT NULL
-    \item \texttt{birth\_year}: INTEGER, NOT NULL, CHECK (birth\_year >= 1800 AND birth\_year <= 2026)
+    \item \texttt{birth\_year}: INTEGER, NOT NULL, CHECK (\texttt{birth\_year} >= 1800 AND \texttt{birth\_year} <= 2026)
 \end{itemize}
 
 \noindent\textbf{Primary key:} Surrogate key \texttt{id}. A surrogate key is preferred because multiple people can share the same name.
@@ -453,7 +454,7 @@ The activity diagram for this use case is shown in Figure~\ref{fig:diagram4}.
     \item \texttt{id}: SERIAL, PRIMARY KEY
     \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{score}: INTEGER, NOT NULL, CHECK (score >= 0 AND score <= 10)
+    \item \texttt{score}: INTEGER, NOT NULL, CHECK (\texttt{score} >= 0 AND \texttt{score} <= 10)
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
     \item UNIQUE (\texttt{user\_id}, \texttt{movie\_id})
 \end{itemize}
@@ -476,7 +477,7 @@ The activity diagram for this use case is shown in Figure~\ref{fig:diagram4}.
     \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
     \item \texttt{title}: VARCHAR(200), NOT NULL
-    \item \texttt{content}: TEXT, NOT NULL, CHECK (LENGTH(content) >= 50)
+    \item \texttt{content}: TEXT, NOT NULL, CHECK (LENGTH(\texttt{content}) >= 50)
     \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
     \item UNIQUE (\texttt{user\_id}, \texttt{movie\_id})
 \end{itemize}
@@ -517,6 +518,7 @@ The activity diagram for this use case is shown in Figure~\ref{fig:diagram4}.
 \end{itemize}
 
 \noindent\textbf{Primary key:} Surrogate key \texttt{id}. Although genre name is unique and could serve as a primary key, a surrogate key works better in a junction table which connects movies and genres together.
+
 \noindent\textbf{Foreign keys:} None.
 
 \subsubsection{MovieGenre}
@@ -570,6 +572,7 @@ multiple movies and a single movie to appear in multiple watchlists.
 \end{itemize}
 
 \noindent\textbf{Primary key:} Composite key (\texttt{watchlist\_id}, \texttt{movie\_id}).
+
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
@@ -589,6 +592,7 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
 \end{itemize}
 
 \noindent\textbf{Primary key:} Composite key (\texttt{watchlist\_id}, \texttt{user\_id}).
+
 \noindent\textbf{Foreign keys:}
 \begin{itemize}
     \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
