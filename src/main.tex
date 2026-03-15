@@ -678,7 +678,22 @@ between watchlists and users. Allows a single watchlist to bo owned by multiple 
     \item Deleting: \texttt{movie\_id} CASCADE - Deleting a movie removes relationships with people in that movie. \texttt{person\_id} CASCADE - Deleting a person removes its relationships with every movie. 
 \end{itemize}
 
+\section{Evaluation}
+\label{sec:evaluation}
 
+The most time-consuming part was the design of tables, their relationships and constraints. We had to readjust the model couple times to satisfy all use case scenarios and also every business rule. 
+
+We struggled with coming up with suitable use cases for this particular assignment. Many use cases that we thought about were very basic and trivial. 
+
+Since both of us had created databases in secondary school, many terms were known to us. The new thing for us was definitely relationships between tables and cardinality. Some of the constraints and the behavior when deleting was also not well known for us until now.
+
+Our solution covers the key features of a movie portal. We tried to implement similar features to real-life movie portals. We made some parts easier for us to implement. For example, the actors don't have a character name assigned to them for a specific movie.
+
+We worked mostly iteratively. First step was to create a movie portal specification, then we identified entities and designed tables and relations between them. After that we worked on proper use case scenarios and also business rules.
+
+We used AI for double-checking and overall consistency of our solution. 
+
+We chose a movie portal topic because both of us are huge movie fans.
 
 % ─── Bibliography ────────────────────────────────────────────────────────────
 \printbibliography
