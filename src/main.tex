@@ -129,7 +129,7 @@
     \item \textbf{Rating and review uniqueness}
     One user can rate or review a movie just once. This also includes that only registered users can rate or review a movie.
     \begin{itemize}
-        \item Integrity constraint: UNIQUE constraint (\texttt{user\_id}, \texttt{movie\_id}) in \texttt{Rating} and \texttt{Review} table
+        \item Integrity constraint: UNIQUE constraint (\texttt{user\_id}, \texttt{movie\_id}) in \texttt{Rating} and \texttt{Review} tables
         \item Reason: Prevents duplicate ratings that would manipulate the average score
     \end{itemize}
     \item \textbf{Movie uniqueness}
@@ -177,7 +177,7 @@
     \begin{itemize}
         \item Integrity constraint: UNIQUE constraint on \texttt{username} and \texttt{email} in \texttt{User} table
     \end{itemize}
-    \item \textbf{Total amount of ratings and review}
+    \item \textbf{Total amount of ratings and reviews}
     The total amount of ratings and reviews must be a positive integer value.
     \begin{itemize}
         \item Integrity constraint: CHECK constraint (\texttt{total\_ratings} >= 0) in \texttt{Movie} table
@@ -267,7 +267,7 @@ metadata, genres, and cast.
 
 \subsection{Rating a Movie}
 
-A registered user submits a numerical rating (1--10) for a movie they
+A registered user submits a numerical rating (0 to 10) for a movie they
 have watched.
 
 \textbf{Main flow:}
@@ -275,7 +275,7 @@ have watched.
 \begin{enumerate}
     \item Registered user opens a movie detail page
     \item System checks that the user has not already rated this movie
-    \item User selects a score between 1 and 10 and confirms
+    \item User selects a score between 0 and 10 and confirms
     \item System inserts a record into \texttt{Rating}
     \item System recalculates \texttt{average\_rating} and increments
           \texttt{total\_ratings} in \texttt{Movie}
