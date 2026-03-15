@@ -244,7 +244,7 @@ metadata, genres, and cast.
 
 \textbf{Data layer:}
 \begin{itemize}
-    \item INSERT into \texttt{Movie} (title, release\_year, runtime\_minutes)
+    \item INSERT into \texttt{Movie} (\texttt{title}, \texttt{release\_year}, \texttt{runtime\_minutes})
     \item INSERT into \texttt{MovieGenre} for each selected genre
     \item INSERT into \texttt{MoviePerson} for each person with their role
 \end{itemize}
@@ -284,16 +284,16 @@ have watched.
 
 \textbf{Data layer:}
 \begin{itemize}
-    \item SELECT on \texttt{Rating} to check (user\_id, movie\_id) uniqueness
-    \item INSERT into \texttt{Rating} (user\_id, movie\_id, score)
-    \item UPDATE \texttt{Movie} SET average\_rating, total\_ratings
+    \item SELECT on \texttt{Rating} to check (\texttt{user\_id}, \texttt{movie\_id}) uniqueness
+    \item INSERT into \texttt{Rating} (\texttt{user\_id}, \texttt{movie\_id}, \texttt{score})
+    \item UPDATE \texttt{Movie} SET \texttt{average\_rating}, \texttt{total\_ratings}
 \end{itemize}
 
 \textbf{Alternate flows:}
 \begin{enumerate}
     \item User already rated this movie
     \begin{itemize}
-        \item UNIQUE constraint on (user\_id, movie\_id) prevents duplicate
+        \item UNIQUE constraint on (\texttt{user\_id}, \texttt{movie\_id}) prevents duplicate
         \item System offers the option to update the existing rating instead
     \end{itemize}
     \item User is not logged in
@@ -323,8 +323,9 @@ shares it publicly.
 
 \textbf{Data layer:}
 \begin{itemize}
-    \item INSERT into \texttt{Watchlist} (user\_id, name, description,
+    \item INSERT into \texttt{Watchlist} (name, description,
           is\_public)
+    \item INSERT into \texttt{WatchlistUser} (watchlist\_id, user\_id) to assign the owner
     \item INSERT into \texttt{WatchlistMovie} (watchlist\_id, movie\_id)
           for each added movie
     \item SELECT on \texttt{Watchlist} WHERE is\_public = TRUE for
@@ -335,7 +336,7 @@ shares it publicly.
 \begin{enumerate}
     \item Movie already in watchlist
     \begin{itemize}
-        \item UNIQUE constraint on (watchlist\_id, movie\_id) prevents
+        \item PRIMARY KEY (\texttt{watchlist\_id}, \texttt{movie\_id}) prevents
               duplicates
         \item System notifies the user that the movie is already on
               the list
