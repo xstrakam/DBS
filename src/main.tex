@@ -3,7 +3,7 @@
 
 \documentclass[11pt, a4paper]{article}
 
-% ─── Packages ──────────────────────────────────────────────────────────────
+% ─── Packages ────────────────────────────────────────────────────────────────
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[margin=2.5cm]{geometry}
@@ -30,13 +30,13 @@
 \usepackage[style=numeric, backend=bibtex]{biblatex}
 \addbibresource{references.bib}
 
-% ─── Language (swap to lang/sk for Slovak) ───────────────────────────────────
+% ─── Language ────────────────────────────────────────────────────────────────
 \input{lang/en}
 
 % ─── Student details ─────────────────────────────────────────────────────────
 \newcommand{\StudentName}{Matej Straka, Michal Novick\'{y}}
 \newcommand{\StudyGroup}{Thursday 9:00}
-\newcommand{\AssignmentNumber}{1}
+\newcommand{\AssignmentNumber}{3}
 \newcommand{\AssignmentTitle}{Filmov\'{y} port\'{a}l}
 \newcommand{\AcademicYear}{2025/2026}
 
@@ -81,632 +81,385 @@
 
 % =============================================================================
 
-\section{Specification}
-\label{sec:specification}
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Changes from Assignment 1}
+\label{sec:changes}
+% ─────────────────────────────────────────────────────────────────────────────
 
-\subsection{Problem description}
-The film portal is a web-based information system designed for movie
-enthusiasts who want to discover, evaluate, and discuss films in one
-place. The system addresses the need for a centralised platform where
-users can browse a structured movie catalogue enriched with
-community-driven content - ratings, written reviews, and curated
-watchlists.
+The core data model from Assignment~1 remained stable. Two targeted changes
+were made during physical implementation after discovering minor gaps in the
+original design.
 
-The primary added value lies in the combination of an administrator-maintained
-movie catalogue and active user participation. Unlike a static database,
-the portal allows registered users to express opinions, track movies they
-plan to watch, and share personalised lists with others. This creates a
-self-improving information system where the relevance and quality of content
-grows with the number of active contributors.
+\subsection{Added \texttt{added\_at} to \texttt{watchlists\_movies}}
 
-The system must guarantee fairness of user contributions - a single user
-cannot rate or review the same movie more than once, preventing manipulation
-of average scores. It must also protect the integrity of the catalogue by
-rejecting duplicate movie entries and enforcing realistic metadata values.
-\subsection{Actors}
+\noindent\textbf{Change:} A column \texttt{added\_at TIMESTAMP NOT NULL
+DEFAULT CURRENT\_TIMESTAMP} was added to the \texttt{watchlists\_movies}
+junction table.
 
-\begin{enumerate}
-    \item Visitor (unregistered user)
-    \begin{itemize}
-        \item Can browse movie catalogue
-        \item Can search and filter movies in the catalogue
-        \item Can read reviews and view ratings
-    \end{itemize}
-    \item Registered user
-    \begin{itemize}
-        \item Has all visitor's rights
-        \item Can rate movies
-        \item Can write reviews
-        \item Can create watchlists and share them amongst other users
-    \end{itemize}
+\noindent\textbf{Reason:} The original design treated this table as a pure
+many-to-many bridge with no additional attributes. During implementation it
+became clear that recording \emph{when} a movie was added to a watchlist is
+useful both for ordering items within a list (``recently added first'') and
+for analytical queries about watchlist activity over time. This pattern is
+standard in production watchlist systems.
 
-    \item Administrator
-    \begin{itemize}
-        \item Has all moderator's rights
-        \item Can add new movies into database
-        \item Can modify movie attributes
-    \end{itemize}
-\end{enumerate}
+\subsection{Added \texttt{role} column to \texttt{watchlists\_users}}
 
-\subsection{Key entities}
+\noindent\textbf{Change:} The \texttt{watchlists\_users} junction table
+gained a \texttt{role watchlist\_user\_role\_enum NOT NULL DEFAULT
+'follower'} column. The ENUM type defines three values:
+\texttt{'owner'}, \texttt{'editor'}, and \texttt{'follower'}.
 
-\begin{enumerate}
-    \item \textbf{Movie} - The central entity of the system. Stores
-    metadata about a film including title, release year, runtime, and
-    aggregated rating statistics.
+\noindent\textbf{Reason:} Assignment~1 described watchlists as shareable
+but did not differentiate user roles within a shared list. The physical
+model needed a way to distinguish the creator (owner), collaborators who can
+modify the list (editors), and passive subscribers (followers). Using an
+ENUM type keeps the constraint self-documenting and prevents invalid role
+strings at the database level.
 
-    \item \textbf{User} - Represents a registered account. All
-    community content - ratings, reviews, and watchlists - is tied
-    to a specific user.
+\noindent The updated physical model diagram is shown in
+Figure~\ref{fig:model}.
 
-    \item \textbf{Review} - A textual evaluation of a movie submitted
-    by a registered user, contributing informational value beyond a
-    numerical score.
-
-    \item \textbf{Rating} - A numerical score (0--10) assigned to a
-    movie by a registered user. Drives the average rating used in
-    filtering and discovery.
-
-    \item \textbf{Watchlist} - A named collection of movies created
-    by a user, kept private or shared publicly with others.
-
-    \item \textbf{Genre} - A classification label stored in a lookup
-    table to ensure consistent categorisation across the catalogue.
-
-    \item \textbf{Person} - A real-world individual involved in a
-    movie as a director, writer, or actor. Enables filtering by people
-    behind the films.
-\end{enumerate}
-
-\subsection{Business rules and constraints}
-
-\begin{enumerate}
-    \item \textbf{Rating and review uniqueness:}
-    One user can rate or review a movie just once. This also includes that only registered users can rate or review a movie.
-    \begin{itemize}
-        \item Integrity constraint: UNIQUE constraint (\texttt{user\_id}, \texttt{movie\_id}) in \texttt{Rating} and \texttt{Review} tables
-        \item Reason: Prevents duplicate ratings that would manipulate the average score
-    \end{itemize}
-    \item \textbf{Movie uniqueness:}
-    Combination of title and release year must be unique for every movie to prevent duplicate entries.
-    \begin{itemize}
-        \item Integrity constraint: UNIQUE constraint (\texttt{title}, \texttt{release\_year}) in \texttt{Movie} table
-        \item Reason: The same movie with the same release year cannot be added twice
-    \end{itemize}
-    \item \textbf{Valid release year:}
-    Movie release year must be realistic.
-    \begin{itemize}
-        \item Integrity constraint: CHECK constraint (\texttt{release\_year} >= 1888 AND \texttt{release\_year} <= 2040) in table \texttt{Movie}
-        \item Reason: The first movie was filmed in 1888, the upper limit allows to add movies which are not released yet
-    \end{itemize}
-    \item \textbf{No duplicate movies in a watchlist:}
-    The same movie cannot appear multiple times in a single watchlist.
-    \begin{itemize}
-        \item Integrity constraint: PRIMARY KEY (\texttt{watchlist\_id}, \texttt{movie\_id}) in \texttt{WatchlistMovie} table
-    \end{itemize}
-    \item \textbf{Minimum review length:}
-    A review must contain a meaningful content body with length of 50 or more characters.
-    \begin{itemize}
-        \item Integrity constraint: CHECK constraint (LENGTH(\texttt{content}) >= 50) in \texttt{Review} table
-        \item Reason: Prevents spam reviews, improves overall quality of content on the portal
-    \end{itemize}
-    \item \textbf{Movie limit in a watchlist:}
-    A watchlist can store up to maximum of 100 movies.
-    \begin{itemize}
-        \item Integrity constraint: Can be implemented through trigger function, which checks number of rows in a watchlist before inserting new row.
-        \item Reason: To prevent watchlists from having large amount of movies.
-    \end{itemize}
-    \item \textbf{Rating values:}
-    A rating must be an integer value ranging from 0 to 10.
-    \begin{itemize}
-        \item Integrity constraint: INTEGER data type and CHECK constraint (\texttt{score} >= 0 AND \texttt{score} <= 10) in table \texttt{Rating}
-        \item Reason: To prevent negative or large score amounts from manipulating the average score
-    \end{itemize}
-    \item \textbf{Birth year of people featured in movies:}
-    Birth year of every actor, writer and director must be valid.
-    \begin{itemize}
-        \item Integrity constraint: CHECK constraint (\texttt{birth\_year} >= 1800 AND \texttt{birth\_year} <= 2026) in table \texttt{Person}
-    \end{itemize}
-    \item \textbf{Username and e-mail uniqueness:}
-    Username and e-mail must be unique for every user.
-    \begin{itemize}
-        \item Integrity constraint: UNIQUE constraint on \texttt{username} and \texttt{email} in \texttt{User} table
-    \end{itemize}
-    \item \textbf{Total amount of ratings and reviews:}
-    The total amount of ratings and reviews must be a positive integer value.
-    \begin{itemize}
-        \item Integrity constraint: CHECK constraint (\texttt{total\_ratings} >= 0) in \texttt{Movie} table
-        \item Integrity constraint: CHECK constraint (\texttt{total\_reviews} >= 0) in \texttt{Movie} table
-    \end{itemize}
-    \item \textbf{Average rating value:}
-    The average rating value must be in range from 0 to 10.
-    \begin{itemize}
-        \item Integrity constraint: CHECK constraint (\texttt{average\_rating} >= 0 AND \texttt{average\_rating} <= 10) in \texttt{Movie} table
-    \end{itemize}
-\end{enumerate}
-
-
+% ─────────────────────────────────────────────────────────────────────────────
 \newpage
+\section{Physical Model --- Implementation}
+\label{sec:physical}
+% ─────────────────────────────────────────────────────────────────────────────
 
-\section{Use cases}
-\label{sec:use_cases}
+\subsection{Table overview}
 
-\subsection{Searching and filtering movies}
+\begin{table}[H]
+    \centering
+    \caption{Tables in the film portal database}
+    \label{tab:tables}
+    \begin{tabular}{l p{9cm}}
+        \toprule
+        \textbf{Table} & \textbf{Description} \\
+        \midrule
+        \texttt{users}
+            & Registered accounts; stores credentials, display name, and
+              role (\texttt{user} / \texttt{admin}). \\
+        \texttt{movies}
+            & Central catalogue entry: title, release year, runtime, and
+              pre-aggregated rating statistics. \\
+        \texttt{people}
+            & Directors, actors, and writers referenced by
+              \texttt{movies\_people}. \\
+        \texttt{genres}
+            & Lookup table of genre labels; enforces consistent
+              categorisation. \\
+        \texttt{ratings}
+            & Numerical score (0--10) submitted by one user for one movie. \\
+        \texttt{reviews}
+            & Free-text review (min.\ 50 characters) by one user for one
+              movie. \\
+        \texttt{watchlists}
+            & Named, optionally public collection of movies. \\
+        \texttt{movies\_genres}
+            & M:N bridge between movies and genres. \\
+        \texttt{movies\_people}
+            & M:N bridge between movies and people; includes a role
+              attribute (\texttt{actor} / \texttt{director} /
+              \texttt{writer}). \\
+        \texttt{watchlists\_users}
+            & M:N bridge between watchlists and users; includes a role
+              attribute (\texttt{owner} / \texttt{editor} /
+              \texttt{follower}). \\
+        \texttt{watchlists\_movies}
+            & M:N bridge between watchlists and movies; records the
+              timestamp when each movie was added. \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
-Visitor or registered user filters movies based on multiple criteria (genre, release year, rating, director, actors) and sorts them.
+\subsection{Notable integrity constraints}
 
-\noindent\textbf{Main flow:}
+The constraints below protect non-trivial business rules that go beyond
+simple NOT NULL checks.
+
+\begin{itemize}
+    \item \textbf{Rating and review uniqueness ---}
+    \texttt{UNIQUE (user\_id, movie\_id)} in both \texttt{ratings} and
+    \texttt{reviews} ensures one score and one review per user per film.
+    This prevents score manipulation and duplicate content at the database
+    level, regardless of the application layer.
+
+    \item \textbf{Movie uniqueness ---}
+    \texttt{UNIQUE (title, release\_year)} in \texttt{movies} blocks exact
+    duplicates while permitting legitimate remakes released in different
+    years.
+
+    \item \textbf{Realistic release year ---}
+    \texttt{CHECK (release\_year BETWEEN 1888 AND 2040)} bounds entries to
+    the era of cinema (first known film: 1888) and allows pre-announced
+    near-future releases.
+
+    \item \textbf{Score range ---}
+    \texttt{CHECK (score BETWEEN 0 AND 10)} in \texttt{ratings} and
+    \texttt{CHECK (average\_rating BETWEEN 0 AND 10)} in \texttt{movies}
+    guarantee that every displayed score lies within the expected scale.
+
+    \item \textbf{Minimum review length ---}
+    \texttt{CHECK (LENGTH(content) >= 50)} in \texttt{reviews} prevents
+    one-word spam at the storage level and enforces a basic quality floor.
+
+    \item \textbf{Composite role key in \texttt{movies\_people} ---}
+    The primary key \texttt{(movie\_id, person\_id, role)} allows the same
+    person to be listed as both director and actor in one film, while
+    blocking the same role being assigned twice.
+
+    \item \textbf{Watchlist user role ---}
+    \texttt{role watchlist\_user\_role\_enum NOT NULL DEFAULT 'follower'}
+    in \texttt{watchlists\_users} restricts membership roles to the three
+    defined values, with a safe default for newly followed lists.
+\end{itemize}
+
+\subsection{ON DELETE strategies}
+
+All foreign keys in the schema use \texttt{ON DELETE CASCADE}. The
+governing principle is that every dependent row derives its meaning
+entirely from its parent: a rating without a user or movie is orphaned
+data, a genre link without a movie is meaningless, and so on. Cascading
+deletes prevent constraint violations during administrative bulk operations
+(e.g.\ removing a duplicate movie entry) and keep the database
+self-consistent without requiring application-side cleanup logic.
+
+\texttt{RESTRICT} was considered for genre and person deletions to force
+explicit confirmation before removing shared lookup data, but
+\texttt{CASCADE} was chosen for uniformity and operational safety during
+data corrections.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\newpage
+\section{Seed Data}
+\label{sec:seed}
+% ─────────────────────────────────────────────────────────────────────────────
+
+% TODO: Fill in after seed script is written.
+%
+% Suggested subsections:
+%   \subsection{Generation approach}
+%       -- tool / library used (e.g. Faker + psycopg2), how to reproduce,
+%          reference to seed/README.md
+%   \subsection{Record counts after seeding}
+%       -- table with row counts per table (must total >= 10 000)
+%   \subsection{Distribution strategy}
+%       -- why skewed? what real-world behaviour does it model?
+%          (e.g. power users, popular movies, watchlist size distribution)
+%   \subsection{Consistency guarantees}
+%       -- insertion order, timestamp logic, how average_rating was kept
+%          in sync, FK integrity checks
+
+\textit{[To be completed after seed data generation.]}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\newpage
+\section{Process 1 --- Rating a Movie}
+\label{sec:process1}
+% ─────────────────────────────────────────────────────────────────────────────
+
+% TODO: Fill in after process SQL is finalised and approved by the instructor.
+%
+% Required subsections per assignment specification:
+%   \subsection{Process description and link to use case}
+%   \subsection{SQL implementation}      -- full query + any views
+%   \subsection{Sample execution}        -- input params + first 10 rows of output
+%   \subsection{Correctness verification}
+%   \subsection{Indexes supporting this process}
+
+\textit{[To be completed after instructor approval of selected processes.]}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\newpage
+\section{Process 2 --- User Rating Streak}
+\label{sec:process2}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Process description and link to use case}
+
+This is an \textbf{analytical process} corresponding to the reporting
+perspective of the ``Searching and filtering movies'' use case from
+Assignment~1: identifying the most active rating periods across all users.
+
+The query finds every \textbf{consecutive-day rating streak} for every
+user. A streak is a maximal sequence of calendar days on which a user
+submitted at least one rating, with no gap larger than one day between
+any two consecutive active days. For each qualifying streak the query
+reports:
+
+\begin{itemize}
+    \item the user's full name,
+    \item the start and end date of the streak,
+    \item the total length of the streak in calendar days,
+    \item the number of movies rated during the streak,
+    \item the average score given during the streak.
+\end{itemize}
+
+Only streaks of \textbf{at least 5 consecutive days} are returned,
+ordered by length (longest first), then by end date (most recent first).
+
+\begin{itemize}
+    \item \textbf{Input:} None --- the query runs over the full
+    \texttt{ratings} table.
+    \item \textbf{Output:} One row per qualifying streak with the columns
+    listed above.
+\end{itemize}
+
+\subsection{SQL implementation}
+
+The query is built in three nested layers, each building on the previous
+one.
+
+\begin{lstlisting}[language=SQL, caption={Process 2 --- User rating streak query}]
+SELECT *
+FROM
+    (SELECT
+        CONCAT(u.first_name, ' ', u.last_name) AS name,
+        DATE(MIN(x.date))                       AS start_date,
+        DATE(MAX(x.date))                       AS end_date,
+        (MAX(x.date) - MIN(x.date) + 1)         AS days_streak,
+        COUNT(*)                                AS movies_rated,
+        ROUND(AVG(score), 1)                    AS avg_rating
+    FROM
+        (SELECT z.user_id, z.movie_id, m.title,
+                z.date, z.score,
+                SUM(CASE WHEN z.date - z.prev_date > 1
+                         THEN 1 ELSE 0 END)
+                    OVER (PARTITION BY z.user_id
+                          ORDER BY z.date)      AS group_id
+        FROM
+            (SELECT user_id,
+                    movie_id,
+                    score,
+                    DATE(created_at)                          AS date,
+                    DATE(LAG(created_at)
+                         OVER (PARTITION BY user_id
+                               ORDER BY created_at))          AS prev_date
+             FROM ratings) z
+        JOIN movies m ON m.id = z.movie_id
+        ) x
+    JOIN users u ON u.id = x.user_id
+    GROUP BY u.id, group_id)
+WHERE days_streak >= 5
+ORDER BY days_streak DESC, end_date DESC;
+\end{lstlisting}
+
+\subsubsection{Query logic explained}
+
+The query proceeds in three steps:
 
 \begin{enumerate}
-    \item User opens search tab
-    \item System displays available filters
-    \item User selects and applies filters
-    \item User chooses sorting option
-    \item System creates SQL query and applies it onto the database
-    \item System shows filtered movies
+    \item \textbf{Innermost subquery (alias \texttt{z}):}
+    For each rating row, \texttt{LAG(created\_at)} fetches the timestamp
+    of the same user's previous rating, ordered chronologically.
+    Both values are truncated to \texttt{DATE} so that multiple ratings
+    on the same calendar day count as a single active day.
+    The result is a flat table of
+    \texttt{(user\_id, movie\_id, score, date, prev\_date)}.
+
+    \item \textbf{Middle subquery (alias \texttt{x}):}
+    A running \texttt{SUM} window function increments a
+    \texttt{group\_id} counter each time the gap between two consecutive
+    rating dates for the same user exceeds one calendar day.
+    Because the counter only increases on gaps, all rows within an
+    uninterrupted streak share the same \texttt{group\_id} value.
+    The \texttt{movies} table is joined here to carry the film title.
+
+    \item \textbf{Outer query:}
+    Rows are grouped by \texttt{(user\_id, group\_id)}, which uniquely
+    identifies one streak for one user. Aggregate functions compute the
+    streak start and end dates, the calendar length, the number of
+    ratings, and the average score. A \texttt{WHERE} clause keeps only
+    streaks of at least 5 days, and results are sorted as required.
 \end{enumerate}
-\noindent\textbf{Data layer:}
-\begin{itemize}
-    \item SELECT on \texttt{Movie} with JOIN to \texttt{MovieGenre},
-          \texttt{Genre}, \texttt{MoviePerson}, and \texttt{Person}
-          based on selected filters
-    \item WHERE clause filters by genre, release year, rating, director,
-          or actor depending on user input
-    \item ORDER BY clause applied based on chosen sorting option
-    \item Returns a filtered and sorted list of matching movies
-\end{itemize}
-\noindent\textbf{Alternate flows:}
+
+\subsection{Sample execution on seed data}
+
+% TODO: Once seed data is loaded, run the query and paste the first
+% 10 rows here as a table. Example format:
+%
+% \begin{table}[H]
+%   \centering
+%   \caption{First 10 rows returned by the rating streak query (seed data)}
+%   \label{tab:streak-sample}
+%   \begin{tabular}{l c c r r r}
+%     \toprule
+%     \textbf{name} & \textbf{start\_date} & \textbf{end\_date}
+%       & \textbf{days} & \textbf{movies} & \textbf{avg} \\
+%     \midrule
+%     ... & ... & ... & ... & ... & ... \\
+%     \bottomrule
+%   \end{tabular}
+% \end{table}
+
+\textit{[To be completed after seed data is loaded.]}
+
+\subsection{Correctness verification}
+
+The correctness of the streak grouping was verified by:
 
 \begin{enumerate}
-    \item No results
-    \begin{itemize}
-        \item No movies match the selected filters
-        \item System shows ``no matches'' message
-        \item User adjusts the filters
-    \end{itemize}
+    \item Manually tracing \texttt{group\_id} values for a single test
+    user whose ratings were inserted on known consecutive and
+    non-consecutive dates, confirming that each gap correctly increments
+    the counter.
+    \item Checking that \texttt{days\_streak = MAX(date) - MIN(date) + 1}
+    matches the expected calendar span for each identified streak group.
+    \item Confirming that the \texttt{UNIQUE (user\_id, movie\_id)}
+    constraint on \texttt{ratings} guarantees each movie appears at most
+    once per user, so \texttt{COUNT(*)} equals the number of distinct
+    movies rated within the streak.
 \end{enumerate}
 
-The activity diagram for this use case is shown in Figure~\ref{fig:diagram1}. 
-\subsection{Adding a Movie (Administrator)}
-
-An administrator adds a new movie entry to the portal, including its
-metadata, genres, and cast.
-
-\noindent\textbf{Main flow:}
-
-\begin{enumerate}
-    \item Administrator navigates to the movie management section
-    \item System displays the movie submission form
-    \item Administrator fills in movie details (title, release year,
-          runtime, genres, directors, actors, writers)
-    \item Administrator submits the form
-    \item System validates the input (release year range, unique
-          title + year combination, positive runtime)
-    \item System inserts a new record into \texttt{Movie}, links genres
-          via \texttt{MovieGenre}, and links people via \texttt{MoviePerson}
-    \item System confirms successful addition
-\end{enumerate}
-
-\noindent\textbf{Data layer:}
-\begin{itemize}
-    \item INSERT into \texttt{Movie} (\texttt{title}, \texttt{release\_year}, \texttt{runtime\_minutes})
-    \item INSERT into \texttt{MovieGenre} for each selected genre
-    \item INSERT into \texttt{MoviePerson} for each person with their role
-\end{itemize}
-
-\noindent\textbf{Alternate flows:}
-\begin{enumerate}
-    \item Duplicate movie
-    \begin{itemize}
-        \item A movie with the same title and release year already exists
-        \item System rejects the submission and displays an error message
-        \item Administrator corrects the entry or cancels
-    \end{itemize}
-    \item Invalid data
-    \begin{itemize}
-        \item Release year or runtime fails CHECK constraint
-        \item System highlights the invalid fields
-        \item Administrator corrects the values and resubmits
-    \end{itemize}
-\end{enumerate}
-
-The activity diagram for this use case is shown in Figure~\ref{fig:diagram2}.
-\subsection{Rating a Movie}
-
-A registered user submits a numerical rating (0 to 10) for a movie they
-have watched.
-
-\noindent\textbf{Main flow:}
-
-\begin{enumerate}
-    \item Registered user opens a movie detail page
-    \item System checks that the user has not already rated this movie
-    \item User selects a score between 0 and 10 and confirms
-    \item System inserts a record into \texttt{Rating}
-    \item System recalculates \texttt{average\_rating} and increments
-          \texttt{total\_ratings} in \texttt{Movie}
-    \item Updated average rating is displayed on the movie page
-\end{enumerate}
-
-\noindent\textbf{Data layer:}
-\begin{itemize}
-    \item SELECT on \texttt{Rating} to check (\texttt{user\_id}, \texttt{movie\_id}) uniqueness
-    \item INSERT into \texttt{Rating} (\texttt{user\_id}, \texttt{movie\_id}, \texttt{score})
-    \item UPDATE \texttt{Movie} SET \texttt{average\_rating}, \texttt{total\_ratings}
-\end{itemize}
-
-\noindent\textbf{Alternate flows:}
-\begin{enumerate}
-    \item User already rated this movie
-    \begin{itemize}
-        \item UNIQUE constraint on (\texttt{user\_id}, \texttt{movie\_id}) prevents duplicate
-        \item System offers the option to update the existing rating instead
-    \end{itemize}
-    \item User is not logged in
-    \begin{itemize}
-        \item System redirects to the login page
-    \end{itemize}
-\end{enumerate}
-
-
-The activity diagram for this use case is shown in Figure~\ref{fig:diagram3}.
-\subsection{Creating and Managing a Watchlist}
-
-A registered user creates a watchlist, adds movies to it, and optionally
-shares it publicly.
-
-\noindent\textbf{Main flow:}
-
-\begin{enumerate}
-    \item Registered user navigates to their profile and selects
-          ``Create watchlist''
-    \item User enters a name, optional description, and sets visibility
-          (public / private)
-    \item System inserts a new record into \texttt{Watchlist}
-    \item User browses the movie catalogue and adds movies to the watchlist
-    \item System inserts records into \texttt{WatchlistMovie}
-          (\texttt{watchlist\_id}, \texttt{movie\_id})
-    \item If the watchlist is public, other users can view and browse it
-\end{enumerate}
-
-\noindent\textbf{Data layer:}
-\begin{itemize}
-    \item INSERT into \texttt{Watchlist} (\texttt{name}, \texttt{description},
-          \texttt{is\_public})
-    \item INSERT into \texttt{WatchlistUser} (\texttt{watchlist\_id}, \texttt{user\_id}) to assign the owner
-    \item INSERT into \texttt{WatchlistMovie} (\texttt{watchlist\_id}, \texttt{movie\_id})
-          for each added movie
-    \item SELECT on \texttt{Watchlist} WHERE \texttt{is\_public} = TRUE for
-          public browsing
-\end{itemize}
-
-\noindent\textbf{Alternate flows:}
-\begin{enumerate}
-    \item Movie already in watchlist
-    \begin{itemize}
-        \item PRIMARY KEY (\texttt{watchlist\_id}, \texttt{movie\_id}) prevents
-              duplicates
-        \item System notifies the user that the movie is already on
-              the list
-    \end{itemize}
-\end{enumerate}
-
-The activity diagram for this use case is shown in Figure~\ref{fig:diagram4}.
-
-\section{Relational Model Design}
-
-\subsection{Overview of tables and attributes}
-
-\subsubsection{User}
-
-\noindent\textbf{Purpose:} Stores information about registered users.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{id}: SERIAL, PRIMARY KEY % v postgreSQL serial == integer auto increment
-    \item \texttt{first\_name}: VARCHAR(50), NOT NULL
-    \item \texttt{last\_name}: VARCHAR(50), NOT NULL
-    \item \texttt{username}: VARCHAR(30), NOT NULL, UNIQUE
-    \item \texttt{email}: VARCHAR(254), NOT NULL, UNIQUE
-    \item \texttt{password\_hash}: VARCHAR(60), NOT NULL % bcrypt hash
-    \item \texttt{role}: ENUM('user', 'admin'), NOT NULL, DEFAULT 'user'
-    \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
-\end{itemize}
-
-\noindent\textbf{Primary key:} Surrogate key \texttt{id}. A surrogate key is preferred over username or email because both, although unique, might be changed in the future.
-
-\noindent\textbf{Foreign keys:} None.
-
-\subsubsection{Movie}
-
-\noindent\textbf{Purpose:} Stores information about movies.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{id}: SERIAL, PRIMARY KEY
-    \item \texttt{title}: VARCHAR(200), NOT NULL
-    \item \texttt{release\_year}: INTEGER, NOT NULL, CHECK (\texttt{release\_year} >= 1888 AND \texttt{release\_year} <= 2040)
-    \item \texttt{runtime\_minutes}: INTEGER, CHECK (\texttt{runtime\_minutes} > 0)
-    \item \texttt{average\_rating}: NUMERIC(3,1), DEFAULT NULL, CHECK (\texttt{average\_rating} >= 0 AND \texttt{average\_rating} <= 10)
-    \item \texttt{total\_ratings}: INTEGER, NOT NULL, CHECK (\texttt{total\_ratings} >= 0), DEFAULT 0
-    \item \texttt{total\_reviews}: INTEGER, NOT NULL, CHECK (\texttt{total\_reviews} >= 0), DEFAULT 0
-    \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
-    \item UNIQUE (\texttt{title}, \texttt{release\_year})
-\end{itemize}
-
-\noindent\textbf{Primary key:} Surrogate key \texttt{id}. An artificial key is preferred over the combination of title and release year, because title can be lenghty and id is more efficient for indexing.
-
-\noindent\textbf{Foreign keys:} None.
-
-\subsubsection{Person}
-
-\noindent\textbf{Purpose:} Stores information about people involved in movies (directors, actors, writers).
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{id}: SERIAL, PRIMARY KEY
-    \item \texttt{first\_name}: VARCHAR(50), NOT NULL
-    \item \texttt{last\_name}: VARCHAR(50), NOT NULL
-    \item \texttt{birth\_year}: INTEGER, NOT NULL, CHECK (\texttt{birth\_year} >= 1800 AND \texttt{birth\_year} <= 2026)
-\end{itemize}
-
-\noindent\textbf{Primary key:} Surrogate key \texttt{id}. A surrogate key is preferred because multiple people can share the same name.
-
-\noindent\textbf{Foreign keys:} None.
-
-\subsubsection{Rating}
-
-\noindent\textbf{Purpose:} Stores numerical movie ratings submitted by registered users.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{id}: SERIAL, PRIMARY KEY
-    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{score}: INTEGER, NOT NULL, CHECK (\texttt{score} >= 0 AND \texttt{score} <= 10)
-    \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
-    \item UNIQUE (\texttt{user\_id}, \texttt{movie\_id})
-\end{itemize}
-
-\noindent\textbf{Primary key:} Surrogate key \texttt{id}. Although the combination (\texttt{user\_id}, \texttt{movie\_id}) could serve as a natural primary key, a surrogate key is more efficient for indexing.
-
-\noindent\textbf{Foreign keys:}
-\begin{itemize}
-    \item \texttt{user\_id} REFERENCES \texttt{User(id)}
-    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}
-\end{itemize}
-
-\subsubsection{Review}
-
-\noindent\textbf{Purpose:} Stores text reviews of movies written by registered users.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{id}: SERIAL, PRIMARY KEY
-    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{title}: VARCHAR(200), NOT NULL
-    \item \texttt{content}: TEXT, NOT NULL, CHECK (LENGTH(\texttt{content}) >= 50)
-    \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
-    \item UNIQUE (\texttt{user\_id}, \texttt{movie\_id})
-\end{itemize}
-
-\noindent\textbf{Primary key:} Surrogate key \texttt{id}. Each review is a unique record identified by a numeric ID.
-
-\noindent\textbf{Foreign keys:}
-\begin{itemize}
-    \item \texttt{user\_id} REFERENCES \texttt{User(id)}
-    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}
-\end{itemize}
-
-\subsubsection{Watchlist}
-
-\noindent\textbf{Purpose:} Stores movie lists created by registered users.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{id}: SERIAL, PRIMARY KEY
-    \item \texttt{name}: VARCHAR(100), NOT NULL
-    \item \texttt{description}: TEXT
-    \item \texttt{is\_public}: BOOLEAN, NOT NULL, DEFAULT TRUE
-    \item \texttt{created\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
-\end{itemize}
-
-\noindent\textbf{Primary key:} Surrogate key \texttt{id}. Works as a unique identificator of a watchlist, which can have one or multiple owners.
-
-\noindent\textbf{Foreign keys:} None.
-
-\subsubsection{Genre}
-
-\noindent\textbf{Purpose:} Lookup table for genre names.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{id}: SERIAL, PRIMARY KEY
-    \item \texttt{name}: VARCHAR(30), NOT NULL, UNIQUE
-\end{itemize}
-
-\noindent\textbf{Primary key:} Surrogate key \texttt{id}. Although genre name is unique and could serve as a primary key, a surrogate key works better in a junction table which connects movies and genres together.
-
-\noindent\textbf{Foreign keys:} None.
-
-\subsubsection{MovieGenre}
-
-\noindent\textbf{Purpose:} Junction table representing a M:N relationship between movies and genres.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{genre\_id}: INTEGER, NOT NULL, FOREIGN KEY
-\end{itemize}
-
-\noindent\textbf{Primary key:} Composite key (\texttt{movie\_id}, \texttt{genre\_id}). 
-
-\noindent\textbf{Foreign keys:}
-\begin{itemize}
-    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}
-    \item \texttt{genre\_id} REFERENCES \texttt{Genre(id)}
-\end{itemize}
-
-\subsubsection{MoviePerson}
-
-\noindent\textbf{Purpose:} Junction table representing a M:N relationship between movies and directors, actors and writers.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{person\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{role}: ENUM('actor', 'director', 'writer'), NOT NULL
-\end{itemize}
-
-\noindent\textbf{Primary key:} Composite key (\texttt{movie\_id}, \texttt{person\_id}, \texttt{role}). Role is included in composite key as the same person can be a director and an actor in the same movie.
-
-\noindent\textbf{Foreign keys:}
-\begin{itemize}
-    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}
-    \item \texttt{person\_id} REFERENCES \texttt{Person(id)}
-\end{itemize}
-
-\subsubsection{WatchlistMovie}
-
-\noindent\textbf{Purpose:} Junction table representing a M:N relationship
-between watchlists and movies. Allows a single watchlist to contain
-multiple movies and a single movie to appear in multiple watchlists.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{watchlist\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{movie\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{added\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
-\end{itemize}
-
-\noindent\textbf{Primary key:} Composite key (\texttt{watchlist\_id}, \texttt{movie\_id}).
-
-\noindent\textbf{Foreign keys:}
-\begin{itemize}
-    \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
-    \item \texttt{movie\_id} REFERENCES \texttt{Movie(id)}
-\end{itemize}
-
-\subsubsection{WatchlistUser}
-
-\noindent\textbf{Purpose:} Junction table representing a M:N relationship
-between watchlists and users. Allows a single watchlist to bo owned by multiple users and a single user to own multiple watchlists.
-
-\noindent\textbf{Attributes:}
-\begin{itemize}
-    \item \texttt{watchlist\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{user\_id}: INTEGER, NOT NULL, FOREIGN KEY
-    \item \texttt{added\_at}: TIMESTAMP, NOT NULL, DEFAULT CURRENT\_TIMESTAMP
-\end{itemize}
-
-\noindent\textbf{Primary key:} Composite key (\texttt{watchlist\_id}, \texttt{user\_id}).
-
-\noindent\textbf{Foreign keys:}
-\begin{itemize}
-    \item \texttt{watchlist\_id} REFERENCES \texttt{Watchlist(id)}
-    \item \texttt{user\_id} REFERENCES \texttt{User(id)}
-\end{itemize}
-
-
-\subsection{Table relationships}
-
-\subsubsection{User and Rating}
-\begin{itemize}
-    \item Relationship type: 1:N - User can rate multiple movies. A primary key from table User can appear multiple times as foreign key in table Rating.
-    \item Cardinality: 1 (User) 0..* (Rating) - User can rate 0 or more movies.
-    \item Mandatory: \texttt{user\_id} NOT NULL - Rating must belong to a user.
-    \item Deleting: \texttt{user\_id} CASCADE - Deleting a user removes all his ratings. %mozno dat SET NULL
-\end{itemize}
-
-\subsubsection{User and Review}
-\begin{itemize}
-    \item Relationship type: 1:N - User can review multiple movies. A primary key from table User can appear multiple times as foreign key in table Review.
-    \item Cardinality: 1 (User) 0..* (Review) - User can review 0 or more movies.
-    \item Mandatory: \texttt{user\_id} NOT NULL - Review must belong to a user.
-    \item Deleting: \texttt{user\_id} CASCADE - Deleting a user removes all his reviews. 
-\end{itemize}
-
-\subsubsection{User and Watchlist}
-\begin{itemize}
-    \item Relationship type: M:N - User can create multiple watchlists and share them among friends. Watchlist can have multiple owners. This relationship is realized by using junction table WatchlistUser.
-    \item Cardinality: 
-    \begin{itemize}
-        \item 1 (User) 0..* (WatchlistUser) - User can own 0 or more watchlists.
-        \item 1..* (WatchlistUser) 1 (Watchlist) - Watchlist has to have at least one owner.
-    \end{itemize}
-    \item Mandatory: \texttt{user\_id} NOT NULL, \texttt{watchlist\_id} NOT NULL.
-    \item Deleting: \texttt{user\_id} CASCADE - Deleting a user removes all his relationships with watchlists. \texttt{watchlist\_id} CASCADE - Deleting a watchlist removes all relationships with users.
-\end{itemize}
-
-\subsubsection{Watchlist and Movie}
-\begin{itemize}
-    \item Relationship type: M:N - Watchlist can have multiple movies. A movie can appear in multiple watchlists. This relationship is realized by using junction table WatchlistMovie.
-    \item Cardinality: 
-    \begin{itemize}
-        \item 1 (Watchlist) 0..* (WatchlistMovie) - Watchlist can consist of 0 or more movies.
-        \item 0..* (WatchlistMovie) 1 (Movie) - A movie can appear in 0 or more watchlists.
-    \end{itemize}      
-    \item Mandatory: \texttt{watchlist\_id} NOT NULL, \texttt{movie\_id} NOT NULL.
-    \item Deleting: \texttt{watchlist\_id} CASCADE - Deleting a watchlist removes relationships with movies in that particular watchlist. \texttt{movie\_id} CASCADE - Deleting a movie removes it from every watchlist. 
-\end{itemize}
-
-\subsubsection{Movie and Rating}
-\begin{itemize}
-    \item Relationship type: 1:N - Movie can be rated multiple times. A primary key from table Movie can appear multiple times as a foreign key in table Rating.
-    \item Cardinality: 1 (Movie) 0..* (Rating) - Movie can have 0 or more ratings.
-    \item Mandatory: \texttt{movie\_id} NOT NULL - Rating must belong to a movie.
-    \item Deleting: \texttt{movie\_id} CASCADE - Deleting a movie removes all its ratings. 
-\end{itemize}
-
-\subsubsection{Movie and Review}
-\begin{itemize}
-    \item Relationship type: 1:N - Movie can be reviewed multiple times. A primary key from table Movie can appear multiple times as a foreign key in table Review.
-    \item Cardinality: 1 (Movie) 0..* (Review) - Movie can have 0 or more reviews.
-    \item Mandatory: \texttt{movie\_id} NOT NULL - Review must belong to a movie.
-    \item Deleting: \texttt{movie\_id} CASCADE - Deleting a movie removes all its reviews. 
-\end{itemize}
-
-\subsubsection{Movie and Genre}
-\begin{itemize}
-    \item Relationship type: M:N - A movie can have multiple genres and multiple movies can have same genres. This relationship is realized by using junction table MovieGenre.
-    \item Cardinality: 
-    \begin{itemize}
-        \item 1 (Genre) 0..* (MovieGenre) 
-        \item 1..* (MovieGenre) 1 (Movie) - Movie has to have at least one genre.
-    \end{itemize}
-    \item Mandatory: \texttt{movie\_id} NOT NULL, \texttt{genre\_id} NOT NULL.
-    \item Deleting: \texttt{movie\_id} CASCADE - Deleting a movie removes relationships with its genres. \texttt{genre\_id} CASCADE - Deleting a genre removes its relationships with every movie. 
-\end{itemize}
-
-\subsubsection{Movie and Person}
-\begin{itemize}
-    \item Relationship type: M:N - A movie can have multiple directors, writers, actors and they can be part of multiple movies. This relationship is realized by using junction table MoviePerson.
-    \item Cardinality: 
-    \begin{itemize}
-        \item 1 (Person) 0..* (MoviePerson) 
-        \item 0..* (MoviePerson) 1 (Movie)
-    \end{itemize}
-    \item Mandatory: \texttt{movie\_id} NOT NULL, \texttt{person\_id} NOT NULL.
-    \item Deleting: \texttt{movie\_id} CASCADE - Deleting a movie removes relationships with people in that movie. \texttt{person\_id} CASCADE - Deleting a person removes its relationships with every movie. 
-\end{itemize}
-
+\subsection{Indexes supporting this process}
+
+% TODO: Add index definitions and justifications here.
+% Minimum recommended for this process:
+%   - ratings(user_id)               -- speeds up PARTITION BY user_id
+%   - ratings(user_id, created_at)   -- composite; eliminates sort for LAG window
+%   - ratings(created_at)            -- supports range scans on date filters
+%
+% Include EXPLAIN (ANALYZE, BUFFERS) before/after at least one index
+% in Section~\ref{sec:performance}.
+
+\textit{[To be completed together with Section~\ref{sec:performance}.]}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\newpage
+\section{Performance and Indexes --- Summary}
+\label{sec:performance}
+% ─────────────────────────────────────────────────────────────────────────────
+
+% TODO: Fill in after index creation and EXPLAIN ANALYZE runs.
+%
+% Required content per assignment specification:
+%   - Complete list of all created indexes (table, columns, type, purpose).
+%   - At least one EXPLAIN (ANALYZE, BUFFERS) before/after comparison
+%     with a short comment explaining what changed (e.g. Seq Scan ->
+%     Index Scan, cost reduction, buffer hits, etc.).
+%   - Note which queries remain slow even with indexes and why
+%     (e.g. small table => planner prefers seq scan, high row estimate).
+
+\textit{[To be completed after index creation and EXPLAIN ANALYZE
+measurements.]}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\newpage
 \section{Evaluation}
 \label{sec:evaluation}
+% ─────────────────────────────────────────────────────────────────────────────
 
-The most time-consuming part was the design of tables, their relationships and constraints. We had to readjust the model couple times to satisfy all use case scenarios and also every business rule. 
+% TODO: Fill in at the end of the project.
+%
+% Required reflections per assignment specification:
+%   - Which part surprised you most --- seed, queries, or indexes? Why?
+%   - Did you discover a bug in the original model during implementation?
+%     How did you fix it?
+%   - Which business rule was hardest to express in pure SQL and why?
+%   - Did you use AI tools? For what exactly, what was the raw output,
+%     and how did you modify or verify it?
 
-We struggled with coming up with suitable use cases for this particular assignment. Many use cases that we thought about were very basic and trivial. 
-
-Since both of us had created databases in secondary school, many terms were known to us. The new thing for us was definitely relationships between tables and cardinality. Some of the constraints and the behavior when deleting was also not well known for us until now.
-
-Our solution covers the key features of a movie portal. We tried to implement similar features to real-life movie portals. We made some parts easier for us to implement. For example, the actors don't have a character name assigned to them for a specific movie.
-
-We worked mostly iteratively. First step was to create a movie portal specification, then we identified entities and designed tables and relations between them. After that we worked on proper use case scenarios and also business rules.
-
-We used AI for double-checking and overall consistency of our solution. 
-
-We chose a movie portal topic because both of us are huge movie fans.
+\textit{[To be completed at the end of the project.]}
 
 % ─── Bibliography ────────────────────────────────────────────────────────────
 \printbibliography
@@ -715,45 +468,13 @@ We chose a movie portal topic because both of us are huge movie fans.
 \newpage
 \appendix
 
-\section{Activity diagrams}
-\label{sec:attachment-diagrams}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{../assets/Diagram1}
-    \caption{Activity diagram - Searching and filtering movies}
-    \label{fig:diagram1}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{../assets/Diagram2}
-    \caption{Activity diagram - Adding a movie (Administrator)}
-    \label{fig:diagram2}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{../assets/Diagram3}
-    \caption{Activity diagram - Rating a movie}
-    \label{fig:diagram3}
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{../assets/Diagram4}
-    \caption{Activity diagram - Creating and managing a watchlist}
-    \label{fig:diagram4}
-\end{figure}
-
-\newpage
-\section{Relational model diagram}
+\section{Physical model diagram}
 \label{sec:attachment-model}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{../assets/Model}
-    \caption{Physical relational model - Film portal}
+    \caption{Updated physical relational model --- Film portal}
     \label{fig:model}
 \end{figure}
 
