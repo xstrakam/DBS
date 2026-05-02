@@ -235,22 +235,111 @@ data corrections.
 \label{sec:seed}
 % ─────────────────────────────────────────────────────────────────────────────
 
-% TODO: Fill in after seed script is written.
-%
-% Suggested subsections:
-%   \subsection{Generation approach}
-%       -- tool / library used (e.g. Faker + psycopg2), how to reproduce,
-%          reference to seed/README.md
-%   \subsection{Record counts after seeding}
-%       -- table with row counts per table (must total >= 10 000)
-%   \subsection{Distribution strategy}
-%       -- why skewed? what real-world behaviour does it model?
-%          (e.g. power users, popular movies, watchlist size distribution)
-%   \subsection{Consistency guarantees}
-%       -- insertion order, timestamp logic, how average_rating was kept
-%          in sync, FK integrity checks
+\subsection{Generation approach}
 
-\textit{[To be completed after seed data generation.]}
+Seed data was generated using a Python script (\texttt{seed/seed.py}) with
+the \textbf{Faker} library for realistic names, usernames, review text, and
+descriptions, and the \textbf{bcrypt} library for password hashing. All rows
+are emitted as plain SQL \texttt{INSERT} statements into a single
+\texttt{seed.sql} file, wrapped in one transaction (\texttt{BEGIN} /
+\texttt{COMMIT}). A fixed random seed (\texttt{SEED = 42}, applied to both
+\texttt{random} and \texttt{Faker}) guarantees that re-running the script
+produces identical output. Running instructions are provided in
+\texttt{seed/README.md}.
+
+\subsection{Record counts after seeding}
+
+\begin{table}[H]
+    \centering
+    \caption{Row counts per table after seeding}
+    \label{tab:seed-counts}
+    \begin{tabular}{l r}
+        \toprule
+        \textbf{Table} & \textbf{Row count} \\
+        \midrule
+        \texttt{genres}              & 20     \\
+        \texttt{users}               & 1\,000 \\
+        \texttt{people}              & 1\,000 \\
+        \texttt{movies}              & 500    \\
+        \texttt{movies\_genres}      & $\approx$1\,000 \\
+        \texttt{movies\_people}      & $\approx$4\,750 \\
+        \texttt{ratings}             & 6\,000 \\
+        \texttt{reviews}             & 2\,000 \\
+        \texttt{watchlists}          & 500    \\
+        \texttt{watchlists\_users}   & $\approx$1\,200 \\
+        \texttt{watchlists\_movies}  & $\approx$17\,000 \\
+        \midrule
+        \textbf{Total}               & $\mathbf{>34\,000}$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\noindent Row counts marked with $\approx$ vary slightly between runs due to
+weighted random sampling; all other counts are exact.
+
+\subsection{Distribution strategy}
+
+The distribution is intentionally non-uniform to reflect realistic usage
+patterns.
+
+\begin{itemize}
+    \item \textbf{Ratings --- streak users:} 50 users were randomly selected
+    to generate 1--3 consecutive-day rating streaks of 4--30 days each,
+    with ratings placed in the evening hours (18:00--23:59). This ensures
+    the streak analytical query (Process~2) has meaningful data to work
+    with. The remaining ratings up to the target of 6\,000 are distributed
+    uniformly across all users and movies.
+
+    \item \textbf{Rating scores:} Scores are drawn from a weighted
+    distribution that favours mid-to-high values
+    (weights 1, 1, 2, 3, 5, 8, 12, 16, 18, 16, 10 for scores 0--10),
+    matching the positive-skew pattern typical of voluntary rating systems
+    where users tend to rate movies they already liked.
+
+    \item \textbf{Reviews:} Only (user, movie) pairs that already have a
+    rating are eligible for a review. 2\,000 such pairs are sampled
+    uniformly, reflecting the real-world behaviour where reviews are far
+    less common than numerical scores.
+
+    \item \textbf{Watchlist sizes:} Each watchlist receives 1--67 movies
+    sampled uniformly, which produces a right-skewed distribution. Sharing
+    is weighted so that 20\% of watchlists are private (not shared beyond
+    the owner) and the rest have 1--4 additional members; follower roles
+    are roughly twice as common as editor roles.
+
+    \item \textbf{Movie genres and cast:} Each movie receives 1--3 genres
+    (weighted 40/45/15\%) and a variable cast: 1--2 directors, 1--3
+    writers, and 3--8 actors, all sampled without replacement from the
+    people pool.
+
+    \item \textbf{User roles:} The first 10 users (by insertion order) are
+    assigned the \texttt{admin} role; all remaining 990 users receive the
+    default \texttt{user} role.
+\end{itemize}
+
+\subsection{Consistency guarantees}
+
+\begin{itemize}
+    \item Rows are inserted in strict dependency order: genres, users, people,
+    movies, then all junction and fact tables. PostgreSQL enforces foreign key
+    constraints on every insert, so any ordering error surfaces immediately.
+
+    \item The \texttt{UNIQUE (user\_id, movie\_id)} constraint on
+    \texttt{ratings} is respected during generation: a \texttt{rating\_pairs}
+    set tracks all assigned pairs and duplicate candidates are resampled
+    before insertion.
+
+    \item The \texttt{average\_rating}, \texttt{total\_ratings}, and
+    \texttt{total\_reviews} columns in \texttt{movies} are computed in-memory
+    after all ratings and reviews are generated, then written into the
+    \texttt{INSERT} statements for \texttt{movies} --- so the pre-aggregated
+    values are always consistent with the inserted fact rows.
+
+    \item All timestamps (\texttt{created\_at}, \texttt{added\_at}) fall
+    within the range 2026-01-01 to 2026-05-31, which is a realistic
+    operational window and avoids \texttt{CHECK} violations on
+    \texttt{birth\_year} or \texttt{release\_year}.
+\end{itemize}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \newpage
@@ -307,42 +396,8 @@ ordered by length (longest first), then by end date (most recent first).
 
 \subsection{SQL implementation}
 
-The query is built in three nested layers, each building on the previous
-one.
-
-\begin{lstlisting}[language=SQL, caption={Process 2 --- User rating streak query}]
-SELECT *
-FROM
-    (SELECT
-        CONCAT(u.first_name, ' ', u.last_name) AS name,
-        DATE(MIN(x.date))                       AS start_date,
-        DATE(MAX(x.date))                       AS end_date,
-        (MAX(x.date) - MIN(x.date) + 1)         AS days_streak,
-        COUNT(*)                                AS movies_rated,
-        ROUND(AVG(score), 1)                    AS avg_rating
-    FROM
-        (SELECT z.user_id, z.movie_id, m.title,
-                z.date, z.score,
-                SUM(CASE WHEN z.date - z.prev_date > 1
-                         THEN 1 ELSE 0 END)
-                    OVER (PARTITION BY z.user_id
-                          ORDER BY z.date)      AS group_id
-        FROM
-            (SELECT user_id,
-                    movie_id,
-                    score,
-                    DATE(created_at)                          AS date,
-                    DATE(LAG(created_at)
-                         OVER (PARTITION BY user_id
-                               ORDER BY created_at))          AS prev_date
-             FROM ratings) z
-        JOIN movies m ON m.id = z.movie_id
-        ) x
-    JOIN users u ON u.id = x.user_id
-    GROUP BY u.id, group_id)
-WHERE days_streak >= 5
-ORDER BY days_streak DESC, end_date DESC;
-\end{lstlisting}
+The full query is provided in \texttt{queries.sql}. It is built in three
+nested layers, each building on the previous one.
 
 \subsubsection{Query logic explained}
 
