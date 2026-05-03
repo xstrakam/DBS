@@ -604,22 +604,22 @@ One covering index was created specifically for this process.
     \centering
     \caption{All custom indexes created beyond PK and UNIQUE constraints}
     \label{tab:indexes}
-    \begin{tabular}{l l l p{2cm}}
+    \begin{tabular}{l l l p{5.5cm}}
         \toprule
         \textbf{Index name} & \textbf{Table} & \textbf{Columns} & \textbf{Purpose} \\
         \midrule
         \texttt{idx\_ratings\_user\_created\_at\_cover}
             & \texttt{ratings}
             & \texttt{(user\_id, created\_at)} \newline INCLUDE \texttt{(score, movie\_id)}
-            & Covering index for Process~2 window functions; eliminates Seq Scan and Sort on \texttt{ratings}. \\[4pt]
+            & Covering index for Process~2 window functions; eliminates Seq Scan and Sort on \texttt{ratings}. \\[1pt]
         \texttt{idx\_movies\_title\_year}
             & \texttt{movies}
             & \texttt{(title, release\_year,} \newline \texttt{runtime\_minutes)}
-            & Process~1 validation SELECT; replaces post-filter on \texttt{release\_year} and \texttt{runtime\_minutes} with a full index condition. \\[4pt]
+            & Process~1 validation SELECT; replaces post-filter on \texttt{release\_year} and \texttt{runtime\_minutes} with a full index condition. \\[1pt]
         \texttt{idx\_movies\_genres\_movie\_id}
             & \texttt{movies\_genres}
             & \texttt{(movie\_id)}
-            & Process~1 validation SELECT; replaces Bitmap Heap Scan via PK with a direct Index Scan on \texttt{movie\_id}. \\[4pt]
+            & Process~1 validation SELECT; replaces Bitmap Heap Scan via PK with a direct Index Scan on \texttt{movie\_id}. \\[1pt]
         \texttt{idx\_movies\_genres\_genre\_id}
             & \texttt{movies\_genres}
             & \texttt{(genre\_id)}
