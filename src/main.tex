@@ -13,7 +13,6 @@
 \usepackage{float}
 \usepackage{xcolor}
 \usepackage{listings}
-\usepackage{tabularx}
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue!70!black}
 
 % ─── Code listing style ─────────────────────────────────────────────────────
@@ -117,18 +116,6 @@ model needed a way to distinguish the creator (owner), collaborators who can
 modify the list (editors), and passive subscribers (followers). Using an
 ENUM type keeps the constraint self-documenting and prevents invalid role
 strings at the database level.
-
-\subsection{Added \texttt{ON UPDATE CASCADE} to all foreign keys}
-
-\noindent\textbf{Change:} All foreign key constraints were updated to
-include \texttt{ON UPDATE CASCADE} in addition to \texttt{ON DELETE
-CASCADE}.
-
-\noindent\textbf{Reason:} Although serial primary keys are rarely updated
-in practice, adding \texttt{ON UPDATE CASCADE} ensures that any
-administrative correction to a primary key value (e.g.\ during a data
-migration) propagates automatically to all referencing tables, preventing
-orphaned rows.
 
 \noindent The updated physical model diagram is shown in
 Figure~\ref{fig:model}.
@@ -250,14 +237,15 @@ data corrections.
 
 \subsection{Generation approach}
 
-Seed data was generated using a Python script with
+Seed data was generated using a Python script (\texttt{seed/seed.py}) with
 the \textbf{Faker} library for realistic names, usernames, review text, and
 descriptions, and the \textbf{bcrypt} library for password hashing. All rows
 are emitted as plain SQL \texttt{INSERT} statements into a single
 \texttt{seed.sql} file, wrapped in one transaction (\texttt{BEGIN} /
 \texttt{COMMIT}). A fixed random seed (\texttt{SEED = 2206}, applied to both
 \texttt{random} and \texttt{Faker}) guarantees that re-running the script
-produces identical output.
+produces identical output. Running instructions are provided in
+\texttt{seed/README.md}.
 
 \subsection{Record counts after seeding}
 
@@ -358,8 +346,6 @@ patterns.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \newpage
-% ─────────────────────────────────────────────────────────────────────────────
-\newpage
 \section{Process 1 --- Adding a Movie}
 \label{sec:process1}
 % ─────────────────────────────────────────────────────────────────────────────
@@ -420,14 +406,96 @@ film entry to the portal, including its metadata, genre links, and cast.
 
 \subsection{SQL implementation}
 
-The full query is provided in \texttt{query1.sql}. The insert uses a
+The full query is provided in \texttt{queries.sql}. The insert uses a
 single CTE that performs all three inserts atomically, looking up genre
-and person IDs by name from the actual tables.
+and person IDs by name from the actual tables rather than requiring the
+caller to supply raw IDs.
 
 \subsection{Sample execution on seed data}
 
-\textit{[To be completed --- insert screenshot or table of output from
-the validation SELECT and the three alternate-flow error messages.]}
+The following example demonstrates the full main flow and all three alternate
+flows using seed data.
+
+\subsubsection*{Main flow --- successful insert}
+
+The CTE below was executed on the seed database. It inserted the film
+\emph{Crazy School} (2025, 120\,min) with genres Action, Drama, Thriller and
+three cast members looked up by name. The query returned \texttt{id = 536}.
+
+\begin{lstlisting}[language=SQL, caption={Process 1 --- insert CTE}]
+WITH new_movie AS (
+    INSERT INTO movies (title, release_year, runtime_minutes)
+    VALUES ('Crazy School', 2025, 120)
+    RETURNING id
+),
+new_genres AS (
+    INSERT INTO movies_genres (movie_id, genre_id)
+    SELECT new_movie.id, g.id
+    FROM new_movie, genres g
+    WHERE g.name IN ('Action', 'Drama', 'Thriller')
+),
+new_cast AS (
+    INSERT INTO movies_people (movie_id, person_id, role)
+    SELECT new_movie.id, p.id, c.role::movie_person_role_enum
+    FROM new_movie,
+         (VALUES ('Michelle', 'Mason',    'director'),
+                 ('Nancy',    'Maynard',  'actor'),
+                 ('Francis',  'Holloway', 'writer'))
+         AS c(first_name, last_name, role)
+    JOIN people p ON p.first_name = c.first_name
+                 AND p.last_name  = c.last_name
+)
+SELECT id FROM new_movie;
+\end{lstlisting}
+
+The validation SELECT was then run against the inserted row and returned the
+result shown in Figure~\ref{fig:sample1}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../assets/sample1}
+    \caption{Validation SELECT output for the inserted film \emph{Crazy School}}
+    \label{fig:sample1}
+\end{figure}
+
+\subsubsection*{Alternate flow 1 --- duplicate movie}
+
+Running the same CTE a second time triggered the \texttt{UNIQUE (title,
+release\_year)} constraint and produced the error shown in
+Figure~\ref{fig:error1}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../assets/error1}
+    \caption{Duplicate key error on second insert of \emph{Crazy School} (2025)}
+    \label{fig:error1}
+\end{figure}
+
+\subsubsection*{Alternate flow 2 --- invalid release year}
+
+Supplying \texttt{release\_year = 1800} triggered the
+\texttt{CHECK (release\_year BETWEEN 1888 AND 2040)} constraint, as shown in
+Figure~\ref{fig:error2}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../assets/error2}
+    \caption{Check constraint violation for release year 1800}
+    \label{fig:error2}
+\end{figure}
+
+\subsubsection*{Alternate flow 3 --- invalid runtime}
+
+Supplying \texttt{runtime\_minutes = -1} triggered the
+\texttt{CHECK (runtime\_minutes > 0)} constraint, as shown in
+Figure~\ref{fig:error3}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../assets/error3}
+    \caption{Check constraint violation for runtime -1}
+    \label{fig:error3}
+\end{figure}
 
 \subsection{Correctness verification}
 
@@ -475,6 +543,10 @@ Two custom indexes support the validation SELECT that follows the insert.
 
 \subsection{Process description and link to use case}
 
+This is an \textbf{analytical process} corresponding to the reporting
+perspective of the ``User activity overview'' use case from Assignment~1:
+identifying and detailing the most active consecutive rating periods across
+all users.
 
 The query identifies every \textbf{consecutive-day rating streak} for every
 user and returns a \textbf{row-level breakdown} of the top 10 longest
@@ -492,10 +564,6 @@ For each individual rating within a top-10 streak the query reports:
     \item a running average of the absolute score deviations within the
           streak (\texttt{running\_avg\_rating\_diff}), showing how
           consistently the user rates relative to the crowd,
-    \item a running average of scores given so far within the streak
-          (\texttt{running\_avg}),
-    \item the change in score compared to the previous rating in the same
-          streak (\texttt{score\_change}),
     \item the total length of the streak in calendar days
           (\texttt{streak\_days}) and the total number of movies rated
           (\texttt{movies\_rated}),
@@ -512,7 +580,7 @@ For each individual rating within a top-10 streak the query reports:
 
 \subsection{SQL implementation}
 
-The full query is provided in \texttt{query2.sql}. It is structured as
+The full query is provided in \texttt{queries.sql}. It is structured as
 four nested layers, each building on the previous one.
 
 \subsubsection{Query logic explained}
@@ -554,8 +622,17 @@ four nested layers, each building on the previous one.
 
 \subsection{Sample execution on seed data}
 
-\textit{[To be completed after seed data is loaded --- insert first rows
-of query output here.]}
+The query was executed on the seed database. The first 10 rows of the result
+are shown in Figure~\ref{fig:sample2}. Each row represents one rating within
+a top-10 streak, with the streak rank, calendar length, user name, movie
+title, date, score, movie average, and rating deviation visible.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{../assets/sample2}
+    \caption{First 10 rows returned by the top rating streak query (seed data)}
+    \label{fig:sample2}
+\end{figure}
 
 \subsection{Correctness verification}
 
@@ -599,34 +676,121 @@ One covering index was created specifically for this process.
 \label{sec:performance}
 % ─────────────────────────────────────────────────────────────────────────────
 
+% ─────────────────────────────────────────────────────────────────────────────
+\newpage
+\section{Performance and Indexes --- Summary}
+\label{sec:performance}
+% ─────────────────────────────────────────────────────────────────────────────
+
 \subsection{Index overview}
 
 \begin{table}[H]
     \centering
-    \small
-    \renewcommand{\arraystretch}{1.2}
     \caption{All custom indexes created beyond PK and UNIQUE constraints}
     \label{tab:indexes}
-    \begin{tabularx}{\textwidth}{l l X}
+    \begin{tabular}{l l l p{5.5cm}}
         \toprule
-        \textbf{Index name} & \textbf{Table} & \textbf{Purpose} \\
+        \textbf{Index name} & \textbf{Table} & \textbf{Columns} & \textbf{Purpose} \\
         \midrule
         \texttt{idx\_ratings\_user\_created\_at\_cover}
             & \texttt{ratings}
-            & Covering index on \texttt{(user\_id, created\_at)} INCLUDE \texttt{(score, movie\_id)}; eliminates Seq Scan and Sort for Process~2 window functions, enables Index Only Scan with zero heap fetches. \\[2pt]
+            & \texttt{(user\_id, created\_at)} \newline INCLUDE \texttt{(score, movie\_id)}
+            & Covering index for Process~2 window functions; eliminates Seq Scan and Sort on \texttt{ratings}. \\[4pt]
         \texttt{idx\_movies\_title\_year}
             & \texttt{movies}
-            & Composite index on \texttt{(title, release\_year, runtime\_minutes)}; resolves all three WHERE conditions in the Process~1 validation SELECT without a post-filter. \\[2pt]
+            & \texttt{(title, release\_year,} \newline \texttt{runtime\_minutes)}
+            & Process~1 validation SELECT; replaces post-filter on \texttt{release\_year} and \texttt{runtime\_minutes} with a full index condition. \\[4pt]
         \texttt{idx\_movies\_genres\_movie\_id}
             & \texttt{movies\_genres}
-            & Index on \texttt{(movie\_id)}; replaces Bitmap Heap Scan via PK with a direct Index Scan in Process~1 validation SELECT. \\[2pt]
+            & \texttt{(movie\_id)}
+            & Process~1 validation SELECT; replaces Bitmap Heap Scan via PK with a direct Index Scan on \texttt{movie\_id}. \\[4pt]
         \texttt{idx\_movies\_genres\_genre\_id}
             & \texttt{movies\_genres}
-            & Index on \texttt{(genre\_id)}; replaces Seq Scan with Bitmap Index Scan when filtering by genre in the searching use case. \\
+            & \texttt{(genre\_id)}
+            & Searching and filtering use case; replaces Seq Scan with Bitmap Index Scan when filtering by genre. \\
         \bottomrule
-    \end{tabularx}
+    \end{tabular}
 \end{table}
 
+\subsection{Process 2 --- EXPLAIN ANALYZE before and after index}
+
+The most significant improvement was observed for the rating streak query
+(Process~2), where the innermost layer reads all 6\,000 rows from
+\texttt{ratings} ordered by \texttt{(user\_id, created\_at)}.
+
+\subsubsection*{Before: \texttt{idx\_ratings\_user\_created\_at\_cover}}
+
+\begin{lstlisting}[language=SQL, caption={Before index --- innermost ratings scan}]
+->  Sort  (cost=475.52..490.52 rows=6000 width=20)
+          (actual time=2.005..2.319 rows=6000 loops=1)
+      Sort Key: ratings.user_id, ratings.created_at
+      Sort Method: quicksort  Memory: 427kB
+      ->  Seq Scan on ratings
+          (cost=0.00..99.00 rows=6000 width=20)
+          (actual time=0.076..0.511 rows=6000 loops=1)
+-- Execution Time: 26.519 ms
+\end{lstlisting}
+
+\subsubsection*{After: \texttt{idx\_ratings\_user\_created\_at\_cover}}
+
+\begin{lstlisting}[language=SQL, caption={After index --- innermost ratings scan}]
+->  Index Only Scan using idx_ratings_user_created_at_cover
+          on ratings
+          (cost=0.28..218.28 rows=6000 width=20)
+          (actual time=0.139..2.470 rows=6000 loops=1)
+      Heap Fetches: 0
+-- Execution Time: 25.244 ms
+\end{lstlisting}
+
+\noindent\textbf{What changed:} The \texttt{Seq Scan} (cost 99, 427\,kB
+quicksort) was replaced by an \texttt{Index Only Scan} with zero heap
+fetches --- all required columns (\texttt{user\_id}, \texttt{created\_at},
+\texttt{score}, \texttt{movie\_id}) are covered by the index, so PostgreSQL
+never touches the heap. The explicit \texttt{Sort} node was also eliminated
+because the index already delivers rows in \texttt{(user\_id, created\_at)}
+order, enabling \texttt{Incremental Sort} for the subsequent
+\texttt{(user\_id, group\_id)} partition. The total execution time improved
+from \textbf{26.5\,ms} to \textbf{25.2\,ms}. The modest wall-clock
+improvement reflects the small dataset (6\,000 rows); on a table with
+hundreds of thousands of ratings the index would be decisive.
+
+\subsection{Process 1 --- EXPLAIN ANALYZE before and after indexes}
+
+\subsubsection*{Before: \texttt{idx\_movies\_title\_year} and
+\texttt{idx\_movies\_genres\_movie\_id}}
+
+\begin{lstlisting}[language=SQL, caption={Before indexes --- movies and movies\_genres access}]
+->  Index Scan using movies_title_release_year_key on movies m
+      Index Cond: (title = 'Brave Galaxy')
+      -- release_year and runtime_minutes applied as post-filter
+->  Bitmap Heap Scan on movies_genres mg
+    ->  Bitmap Index Scan on movies_genres_pkey
+-- Execution Time: 0.226 ms
+\end{lstlisting}
+
+\subsubsection*{After: \texttt{idx\_movies\_title\_year} and
+\texttt{idx\_movies\_genres\_movie\_id}}
+
+\begin{lstlisting}[language=SQL, caption={After indexes --- movies and movies\_genres access}]
+->  Index Scan using idx_movies_title_year on movies m
+      Index Cond: (title = 'Brave Galaxy')
+      -- all three columns resolved inside the index, no post-filter
+->  Index Scan using idx_movies_genres_movie_id on movies_genres mg
+      Index Cond: (movie_id = m.id)
+-- Execution Time: 0.271 ms
+\end{lstlisting}
+
+\noindent\textbf{What changed:} The UNIQUE constraint index
+\texttt{movies\_title\_release\_year\_key} was replaced by
+\texttt{idx\_movies\_title\_year}, which includes \texttt{runtime\_minutes}
+as a third column. All three WHERE conditions are now resolved as index
+conditions rather than post-filters, eliminating the
+\texttt{Rows Removed by Filter} step. The Bitmap Heap Scan on
+\texttt{movies\_genres} via the PK was replaced by a straight
+\texttt{Index Scan} using \texttt{idx\_movies\_genres\_movie\_id}.
+At the current data size (500 movies) the absolute time difference is
+negligible; both indexes would show a proportionally larger benefit as the
+catalogue grows.
 
 \subsection{Searching use case --- EXPLAIN ANALYZE before and after index}
 
@@ -664,7 +828,9 @@ The outer sorting and window aggregation steps in Process~2
 6\,000 rating rows regardless of indexes, accounting for most of the
 25\,ms execution time. These steps cannot be eliminated by B-tree indexes
 because they operate on derived values (\texttt{group\_id},
-\texttt{streak\_days}) computed at runtime.
+\texttt{streak\_days}) computed at runtime. A materialised view refreshed
+periodically would be the appropriate optimisation for a production
+deployment.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \newpage
@@ -672,17 +838,52 @@ because they operate on derived values (\texttt{group\_id},
 \label{sec:evaluation}
 % ─────────────────────────────────────────────────────────────────────────────
 
-% TODO: Fill in at the end of the project.
-%
-% Required reflections per assignment specification:
-%   - Which part surprised you most --- seed, queries, or indexes? Why?
-%   - Did you discover a bug in the original model during implementation?
-%     How did you fix it?
-%   - Which business rule was hardest to express in pure SQL and why?
-%   - Did you use AI tools? For what exactly, what was the raw output,
-%     and how did you modify or verify it?
+\subsection*{Which part surprised us most?}
 
-\textit{[To be completed at the end of the project.]}
+The seed data generation was the most demanding part. It was not enough to
+simply insert random rows --- the data had to reflect realistic behaviour.
+For the streak query to return meaningful results, ratings needed to be
+distributed across time in a way that actually produced consecutive-day
+patterns. This required introducing a \texttt{weighted\_hour()} function to
+concentrate ratings around realistic daytime hours, a separate pool of
+streak users who received structured bursts of activity, and careful
+management of the \texttt{UNIQUE (user\_id, movie\_id)} constraint during
+generation. Getting the distribution to feel plausible --- with some users
+rating many films and others none, and watchlists of varying sizes --- took
+considerably more thought than the queries themselves.
+
+\subsection*{Did we discover a bug in the original model?}
+
+During implementation we found that the \texttt{watchlists\_movies} junction
+table had no timestamp column, making it impossible to order watchlist
+entries by when they were added. The \texttt{added\_at} column was added to
+address this. We also realised that the \texttt{watchlists\_users} table
+did not distinguish between the list owner and other participants, which led
+to adding the \texttt{role} ENUM column.
+
+\subsection*{Which business rule was hardest to express in SQL?}
+
+The consecutive-day streak grouping in Process~2 was the most challenging.
+The standard approach of using \texttt{ROW\_NUMBER() - ROW\_NUMBER()} to
+identify gaps does not work cleanly when a user rates multiple films on the
+same day, producing duplicate dates. The solution --- using \texttt{LAG} to
+compare truncated dates and then a running \texttt{SUM} that increments only
+on gaps greater than one day --- required careful reasoning about the
+ordering guarantees of window functions across multiple nested subqueries.
+
+\subsection*{AI tool usage}
+
+We used Claude (Anthropic) during this assignment in the following ways.
+For the seed script, the lists of adjectives, nouns, review title phrases,
+and review sentences used to generate realistic-sounding movie titles and
+review content were produced with AI assistance and then manually reviewed.
+The SQL queries for both processes were developed interactively with AI
+support --- the AI proposed query structures which were then tested,
+debugged, and refined based on actual PostgreSQL output. The EXPLAIN ANALYZE
+comparisons and index justifications were written by us based on the
+measured results, with AI helping to formulate the prose descriptions.
+All SQL was verified by running it against the live seed database before
+inclusion in the report.
 
 % ─── Bibliography ────────────────────────────────────────────────────────────
 \printbibliography
