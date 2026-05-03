@@ -13,6 +13,7 @@
 \usepackage{float}
 \usepackage{xcolor}
 \usepackage{listings}
+\usepackage{tabularx}
 \hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue!70!black}
 
 % ─── Code listing style ─────────────────────────────────────────────────────
@@ -603,31 +604,27 @@ One covering index was created specifically for this process.
 \begin{table}[H]
     \centering
     \small
-    \renewcommand{\arraystretch}{1.1}
+    \renewcommand{\arraystretch}{1.2}
     \caption{All custom indexes created beyond PK and UNIQUE constraints}
     \label{tab:indexes}
-    \begin{tabular}{l l l p{4.5cm}}
+    \begin{tabularx}{\textwidth}{l l X}
         \toprule
-        \textbf{Index name} & \textbf{Table} & \textbf{Columns} & \textbf{Purpose} \\
+        \textbf{Index name} & \textbf{Table} & \textbf{Purpose} \\
         \midrule
         \texttt{idx\_ratings\_user\_created\_at\_cover}
             & \texttt{ratings}
-            & \texttt{(user\_id, created\_at)} \newline \texttt{INCLUDE (score, movie\_id)}
-            & Covering index for Process~2; eliminates Seq Scan and Sort, enables Index Only Scan. \\[2pt]
+            & Covering index on \texttt{(user\_id, created\_at)} INCLUDE \texttt{(score, movie\_id)}; eliminates Seq Scan and Sort for Process~2 window functions, enables Index Only Scan with zero heap fetches. \\[2pt]
         \texttt{idx\_movies\_title\_year}
             & \texttt{movies}
-            & \texttt{(title, release\_year,} \newline \texttt{runtime\_minutes)}
-            & Process~1 validation SELECT; resolves all three WHERE conditions in the index, no post-filter. \\[2pt]
+            & Composite index on \texttt{(title, release\_year, runtime\_minutes)}; resolves all three WHERE conditions in the Process~1 validation SELECT without a post-filter. \\[2pt]
         \texttt{idx\_movies\_genres\_movie\_id}
             & \texttt{movies\_genres}
-            & \texttt{(movie\_id)}
-            & Process~1 validation SELECT; replaces Bitmap Heap Scan via PK with direct Index Scan. \\[2pt]
+            & Index on \texttt{(movie\_id)}; replaces Bitmap Heap Scan via PK with a direct Index Scan in Process~1 validation SELECT. \\[2pt]
         \texttt{idx\_movies\_genres\_genre\_id}
             & \texttt{movies\_genres}
-            & \texttt{(genre\_id)}
-            & Searching use case; replaces Seq Scan (892 rows removed) with Bitmap Index Scan. \\
+            & Index on \texttt{(genre\_id)}; replaces Seq Scan with Bitmap Index Scan when filtering by genre in the searching use case. \\
         \bottomrule
-    \end{tabular}
+    \end{tabularx}
 \end{table}
 
 
