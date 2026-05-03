@@ -249,15 +249,14 @@ data corrections.
 
 \subsection{Generation approach}
 
-Seed data was generated using a Python script (\texttt{seed/seed.py}) with
+Seed data was generated using a Python script with
 the \textbf{Faker} library for realistic names, usernames, review text, and
 descriptions, and the \textbf{bcrypt} library for password hashing. All rows
 are emitted as plain SQL \texttt{INSERT} statements into a single
 \texttt{seed.sql} file, wrapped in one transaction (\texttt{BEGIN} /
 \texttt{COMMIT}). A fixed random seed (\texttt{SEED = 2206}, applied to both
 \texttt{random} and \texttt{Faker}) guarantees that re-running the script
-produces identical output. Running instructions are provided in
-\texttt{seed/README.md}.
+produces identical output.
 
 \subsection{Record counts after seeding}
 
@@ -420,10 +419,9 @@ film entry to the portal, including its metadata, genre links, and cast.
 
 \subsection{SQL implementation}
 
-The full query is provided in \texttt{queries.sql}. The insert uses a
+The full query is provided in \texttt{query1.sql}. The insert uses a
 single CTE that performs all three inserts atomically, looking up genre
-and person IDs by name from the actual tables rather than requiring the
-caller to supply raw IDs.
+and person IDs by name from the actual tables.
 
 \subsection{Sample execution on seed data}
 
@@ -476,10 +474,6 @@ Two custom indexes support the validation SELECT that follows the insert.
 
 \subsection{Process description and link to use case}
 
-This is an \textbf{analytical process} corresponding to the reporting
-perspective of the ``User activity overview'' use case from Assignment~1:
-identifying and detailing the most active consecutive rating periods across
-all users.
 
 The query identifies every \textbf{consecutive-day rating streak} for every
 user and returns a \textbf{row-level breakdown} of the top 10 longest
@@ -517,7 +511,7 @@ For each individual rating within a top-10 streak the query reports:
 
 \subsection{SQL implementation}
 
-The full query is provided in \texttt{queries.sql}. It is structured as
+The full query is provided in \texttt{query2.sql}. It is structured as
 four nested layers, each building on the previous one.
 
 \subsubsection{Query logic explained}
@@ -604,19 +598,13 @@ One covering index was created specifically for this process.
 \label{sec:performance}
 % ─────────────────────────────────────────────────────────────────────────────
 
-% ─────────────────────────────────────────────────────────────────────────────
-\newpage
-\section{Performance and Indexes --- Summary}
-\label{sec:performance}
-% ─────────────────────────────────────────────────────────────────────────────
-
 \subsection{Index overview}
 
 \begin{table}[H]
     \centering
     \caption{All custom indexes created beyond PK and UNIQUE constraints}
     \label{tab:indexes}
-    \begin{tabular}{l l l p{5.5cm}}
+    \begin{tabular}{l l l p{2cm}}
         \toprule
         \textbf{Index name} & \textbf{Table} & \textbf{Columns} & \textbf{Purpose} \\
         \midrule
@@ -640,85 +628,6 @@ One covering index was created specifically for this process.
     \end{tabular}
 \end{table}
 
-\subsection{Process 2 --- EXPLAIN ANALYZE before and after index}
-
-The most significant improvement was observed for the rating streak query
-(Process~2), where the innermost layer reads all 6\,000 rows from
-\texttt{ratings} ordered by \texttt{(user\_id, created\_at)}.
-
-\subsubsection*{Before: \texttt{idx\_ratings\_user\_created\_at\_cover}}
-
-\begin{lstlisting}[language=SQL, caption={Before index --- innermost ratings scan}]
-->  Sort  (cost=475.52..490.52 rows=6000 width=20)
-          (actual time=2.005..2.319 rows=6000 loops=1)
-      Sort Key: ratings.user_id, ratings.created_at
-      Sort Method: quicksort  Memory: 427kB
-      ->  Seq Scan on ratings
-          (cost=0.00..99.00 rows=6000 width=20)
-          (actual time=0.076..0.511 rows=6000 loops=1)
--- Execution Time: 26.519 ms
-\end{lstlisting}
-
-\subsubsection*{After: \texttt{idx\_ratings\_user\_created\_at\_cover}}
-
-\begin{lstlisting}[language=SQL, caption={After index --- innermost ratings scan}]
-->  Index Only Scan using idx_ratings_user_created_at_cover
-          on ratings
-          (cost=0.28..218.28 rows=6000 width=20)
-          (actual time=0.139..2.470 rows=6000 loops=1)
-      Heap Fetches: 0
--- Execution Time: 25.244 ms
-\end{lstlisting}
-
-\noindent\textbf{What changed:} The \texttt{Seq Scan} (cost 99, 427\,kB
-quicksort) was replaced by an \texttt{Index Only Scan} with zero heap
-fetches --- all required columns (\texttt{user\_id}, \texttt{created\_at},
-\texttt{score}, \texttt{movie\_id}) are covered by the index, so PostgreSQL
-never touches the heap. The explicit \texttt{Sort} node was also eliminated
-because the index already delivers rows in \texttt{(user\_id, created\_at)}
-order, enabling \texttt{Incremental Sort} for the subsequent
-\texttt{(user\_id, group\_id)} partition. The total execution time improved
-from \textbf{26.5\,ms} to \textbf{25.2\,ms}. The modest wall-clock
-improvement reflects the small dataset (6\,000 rows); on a table with
-hundreds of thousands of ratings the index would be decisive.
-
-\subsection{Process 1 --- EXPLAIN ANALYZE before and after indexes}
-
-\subsubsection*{Before: \texttt{idx\_movies\_title\_year} and
-\texttt{idx\_movies\_genres\_movie\_id}}
-
-\begin{lstlisting}[language=SQL, caption={Before indexes --- movies and movies\_genres access}]
-->  Index Scan using movies_title_release_year_key on movies m
-      Index Cond: (title = 'Brave Galaxy')
-      -- release_year and runtime_minutes applied as post-filter
-->  Bitmap Heap Scan on movies_genres mg
-    ->  Bitmap Index Scan on movies_genres_pkey
--- Execution Time: 0.226 ms
-\end{lstlisting}
-
-\subsubsection*{After: \texttt{idx\_movies\_title\_year} and
-\texttt{idx\_movies\_genres\_movie\_id}}
-
-\begin{lstlisting}[language=SQL, caption={After indexes --- movies and movies\_genres access}]
-->  Index Scan using idx_movies_title_year on movies m
-      Index Cond: (title = 'Brave Galaxy')
-      -- all three columns resolved inside the index, no post-filter
-->  Index Scan using idx_movies_genres_movie_id on movies_genres mg
-      Index Cond: (movie_id = m.id)
--- Execution Time: 0.271 ms
-\end{lstlisting}
-
-\noindent\textbf{What changed:} The UNIQUE constraint index
-\texttt{movies\_title\_release\_year\_key} was replaced by
-\texttt{idx\_movies\_title\_year}, which includes \texttt{runtime\_minutes}
-as a third column. All three WHERE conditions are now resolved as index
-conditions rather than post-filters, eliminating the
-\texttt{Rows Removed by Filter} step. The Bitmap Heap Scan on
-\texttt{movies\_genres} via the PK was replaced by a straight
-\texttt{Index Scan} using \texttt{idx\_movies\_genres\_movie\_id}.
-At the current data size (500 movies) the absolute time difference is
-negligible; both indexes would show a proportionally larger benefit as the
-catalogue grows.
 
 \subsection{Searching use case --- EXPLAIN ANALYZE before and after index}
 
@@ -756,9 +665,7 @@ The outer sorting and window aggregation steps in Process~2
 6\,000 rating rows regardless of indexes, accounting for most of the
 25\,ms execution time. These steps cannot be eliminated by B-tree indexes
 because they operate on derived values (\texttt{group\_id},
-\texttt{streak\_days}) computed at runtime. A materialised view refreshed
-periodically would be the appropriate optimisation for a production
-deployment.
+\texttt{streak\_days}) computed at runtime.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \newpage
