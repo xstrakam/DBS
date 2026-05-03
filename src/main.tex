@@ -117,6 +117,18 @@ modify the list (editors), and passive subscribers (followers). Using an
 ENUM type keeps the constraint self-documenting and prevents invalid role
 strings at the database level.
 
+\subsection{Added \texttt{ON UPDATE CASCADE} to all foreign keys}
+
+\noindent\textbf{Change:} All foreign key constraints were updated to
+include \texttt{ON UPDATE CASCADE} in addition to \texttt{ON DELETE
+CASCADE}.
+
+\noindent\textbf{Reason:} Although serial primary keys are rarely updated
+in practice, adding \texttt{ON UPDATE CASCADE} ensures that any
+administrative correction to a primary key value (e.g.\ during a data
+migration) propagates automatically to all referencing tables, preventing
+orphaned rows.
+
 \noindent The updated physical model diagram is shown in
 Figure~\ref{fig:model}.
 
@@ -347,135 +359,145 @@ patterns.
 \label{sec:process1}
 % ─────────────────────────────────────────────────────────────────────────────
 
-% TODO: Fill in after process SQL is finalised and approved by the instructor.
-%
-% Required subsections per assignment specification:
-%   \subsection{Process description and link to use case}
-%   \subsection{SQL implementation}      -- full query + any views
-%   \subsection{Sample execution}        -- input params + first 10 rows of output
-%   \subsection{Correctness verification}
-%   \subsection{Indexes supporting this process}
+\subsection{Process description and link to use case}
 
-\textit{[To be completed after instructor approval of selected processes.]}
+This is an \textbf{operational (transactional) process} corresponding to the
+``Adding a Movie (Administrator)'' use case from Assignment~1. It models the
+sequence of data-layer actions that occur when an administrator submits a new
+film entry to the portal, including its metadata, genre links, and cast.
+
+\begin{itemize}
+    \item \textbf{Input:} Title, release year, runtime in minutes, a list of
+    genre IDs, and a list of (person\_id, role) pairs for directors, writers,
+    and actors. In SQL these are supplied as literal values or query
+    parameters.
+    \item \textbf{Output:} Three sets of inserted rows --- one row in
+    \texttt{movies}, one row per genre in \texttt{movies\_genres}, and one row
+    per person--role pair in \texttt{movies\_people}. On any constraint
+    violation the entire transaction is rolled back and no partial data is
+    written.
+\end{itemize}
+
+\subsubsection{Main flow}
+
+\begin{enumerate}
+    \item The administrator supplies movie details (title, release year,
+    runtime).
+    \item The system validates the release year
+    (\texttt{CHECK release\_year BETWEEN 1888 AND 2040}), the runtime
 
 % ─────────────────────────────────────────────────────────────────────────────
 \newpage
-\section{Process 2 --- User Rating Streak}
+\section{Process 2 --- Top Rating Streaks}
 \label{sec:process2}
 % ─────────────────────────────────────────────────────────────────────────────
 
 \subsection{Process description and link to use case}
 
 This is an \textbf{analytical process} corresponding to the reporting
-perspective of the ``Searching and filtering movies'' use case from
-Assignment~1: identifying the most active rating periods across all users.
+perspective of the ``User activity overview'' use case from Assignment~1:
+identifying and detailing the most active consecutive rating periods across
+all users.
 
-The query finds every \textbf{consecutive-day rating streak} for every
-user. A streak is a maximal sequence of calendar days on which a user
-submitted at least one rating, with no gap larger than one day between
-any two consecutive active days. For each qualifying streak the query
-reports:
+The query identifies every \textbf{consecutive-day rating streak} for every
+user and returns a \textbf{row-level breakdown} of the top 10 longest
+streaks. A streak is a maximal sequence of calendar days on which a user
+submitted at least one rating, with no gap larger than one day between any
+two consecutive active days.
+
+For each individual rating within a top-10 streak the query reports:
 
 \begin{itemize}
-    \item the user's full name,
-    \item the start and end date of the streak,
-    \item the total length of the streak in calendar days,
-    \item the number of movies rated during the streak,
-    \item the average score given during the streak.
+    \item the user's full name and the rated movie's title,
+    \item the date and score of that rating,
+    \item the movie's pre-aggregated average rating and the difference
+          between the user's score and that average (\texttt{rating\_diff}),
+    \item a running average of the absolute score deviations within the
+          streak (\texttt{running\_avg\_rating\_diff}), showing how
+          consistently the user rates relative to the crowd,
+    \item a running average of scores given so far within the streak
+          (\texttt{running\_avg}),
+    \item the change in score compared to the previous rating in the same
+          streak (\texttt{score\_change}),
+    \item the total length of the streak in calendar days
+          (\texttt{streak\_days}) and the total number of movies rated
+          (\texttt{movies\_rated}),
+    \item the streak's global rank by length (\texttt{streak\_rank}).
 \end{itemize}
-
-Only streaks of \textbf{at least 5 consecutive days} are returned,
-ordered by length (longest first), then by end date (most recent first).
 
 \begin{itemize}
     \item \textbf{Input:} None --- the query runs over the full
-    \texttt{ratings} table.
-    \item \textbf{Output:} One row per qualifying streak with the columns
-    listed above.
+    \texttt{ratings} table joined with \texttt{users} and \texttt{movies}.
+    \item \textbf{Output:} One row per rating belonging to a top-10 streak,
+    ordered by streak length (longest first), then by number of movies rated,
+    user name, and rating date ascending.
 \end{itemize}
 
 \subsection{SQL implementation}
 
-The full query is provided in \texttt{queries.sql}. It is built in three
-nested layers, each building on the previous one.
+The full query is provided in \texttt{queries.sql}. It is structured as
+four nested layers, each building on the previous one.
 
 \subsubsection{Query logic explained}
 
-The query proceeds in three steps:
-
 \begin{enumerate}
-    \item \textbf{Innermost subquery (alias \texttt{z}):}
-    For each rating row, \texttt{LAG(created\_at)} fetches the timestamp
-    of the same user's previous rating, ordered chronologically.
-    Both values are truncated to \texttt{DATE} so that multiple ratings
-    on the same calendar day count as a single active day.
-    The result is a flat table of
-    \texttt{(user\_id, movie\_id, score, date, prev\_date)}.
+    \item \textbf{Layer 1 --- gap detection (innermost):}
+    For each rating, \texttt{LAG(created\_at)} retrieves the timestamp of
+    the same user's previous rating ordered chronologically. Both values
+    are truncated to \texttt{DATE}, so multiple ratings on the same
+    calendar day are treated as one active day. The result carries
+    \texttt{(user\_id, movie\_id, score, date, prev\_date, created\_at)}.
 
-    \item \textbf{Middle subquery (alias \texttt{x}):}
-    A running \texttt{SUM} window function increments a
-    \texttt{group\_id} counter each time the gap between two consecutive
-    rating dates for the same user exceeds one calendar day.
-    Because the counter only increases on gaps, all rows within an
-    uninterrupted streak share the same \texttt{group\_id} value.
-    The \texttt{movies} table is joined here to carry the film title.
+    \item \textbf{Layer 2 --- streak grouping:}
+    A running \texttt{SUM} window function increments a \texttt{group\_id}
+    counter every time the gap between consecutive rating dates exceeds one
+    calendar day. Rows within the same uninterrupted streak share the same
+    \texttt{group\_id} for a given user. Additional window functions
+    compute, within each \texttt{(user\_id, group\_id)} partition:
+    the streak start and end dates (\texttt{MIN}/\texttt{MAX} of
+    \texttt{date}), the total rating count (\texttt{COUNT}), and
+    per-row running metrics --- running average score and score change
+    relative to the previous rating (\texttt{LAG(score)}).
 
-    \item \textbf{Outer query:}
-    Rows are grouped by \texttt{(user\_id, group\_id)}, which uniquely
-    identifies one streak for one user. Aggregate functions compute the
-    streak start and end dates, the calendar length, the number of
-    ratings, and the average score. A \texttt{WHERE} clause keeps only
-    streaks of at least 5 days, and results are sorted as required.
+    \item \textbf{Layer 3 --- enrichment and ranking:}
+    The streak rows are joined with \texttt{users} and \texttt{movies} to
+    attach names and pre-aggregated movie averages. Two further derived
+    columns are computed: \texttt{rating\_diff} (user score minus movie
+    average) and a running average of the absolute deviations within the
+    streak (\texttt{running\_avg\_rating\_diff}). A
+    \texttt{DENSE\_RANK()} window function ranks all streaks globally by
+    calendar length, producing \texttt{streak\_rank}.
+
+    \item \textbf{Outer filter and sort:}
+    Only rows belonging to the top-10 ranked streaks
+    (\texttt{streak\_rank <= 10}) are kept. Results are sorted by streak
+    length descending, then by movies rated, user name, and date ascending
+    to give a chronological drill-down view of each streak.
 \end{enumerate}
 
 \subsection{Sample execution on seed data}
 
-% TODO: Once seed data is loaded, run the query and paste the first
-% 10 rows here as a table. Example format:
-%
-% \begin{table}[H]
-%   \centering
-%   \caption{First 10 rows returned by the rating streak query (seed data)}
-%   \label{tab:streak-sample}
-%   \begin{tabular}{l c c r r r}
-%     \toprule
-%     \textbf{name} & \textbf{start\_date} & \textbf{end\_date}
-%       & \textbf{days} & \textbf{movies} & \textbf{avg} \\
-%     \midrule
-%     ... & ... & ... & ... & ... & ... \\
-%     \bottomrule
-%   \end{tabular}
-% \end{table}
-
-\textit{[To be completed after seed data is loaded.]}
+\textit{[To be completed after seed data is loaded --- insert first rows
+of query output here.]}
 
 \subsection{Correctness verification}
 
-The correctness of the streak grouping was verified by:
+The correctness of the query was verified by:
 
 \begin{enumerate}
-    \item Manually tracing \texttt{group\_id} values for a single test
-    user whose ratings were inserted on known consecutive and
-    non-consecutive dates, confirming that each gap correctly increments
-    the counter.
-    \item Checking that \texttt{days\_streak = MAX(date) - MIN(date) + 1}
-    matches the expected calendar span for each identified streak group.
-    \item Confirming that the \texttt{UNIQUE (user\_id, movie\_id)}
-    constraint on \texttt{ratings} guarantees each movie appears at most
-    once per user, so \texttt{COUNT(*)} equals the number of distinct
-    movies rated within the streak.
+    \item Manually tracing \texttt{group\_id} values for a single test user
+    with ratings on known consecutive and non-consecutive dates, confirming
+    that each gap of more than one day correctly increments the counter.
+    \item Checking that \texttt{streak\_days = streak\_end - streak\_start + 1}
+    matches the expected calendar span for each streak group.
+    \item Verifying \texttt{running\_avg} values by hand for a short streak
+    and confirming they match a manual cumulative average calculation.
+    \item Confirming that \texttt{DENSE\_RANK} assigns the same rank to
+    streaks of equal length and that \texttt{streak\_rank <= 10} correctly
+    includes all tied streaks at the boundary.
 \end{enumerate}
 
 \subsection{Indexes supporting this process}
-
-% TODO: Add index definitions and justifications here.
-% Minimum recommended for this process:
-%   - ratings(user_id)               -- speeds up PARTITION BY user_id
-%   - ratings(user_id, created_at)   -- composite; eliminates sort for LAG window
-%   - ratings(created_at)            -- supports range scans on date filters
-%
-% Include EXPLAIN (ANALYZE, BUFFERS) before/after at least one index
-% in Section~\ref{sec:performance}.
 
 \textit{[To be completed together with Section~\ref{sec:performance}.]}
 
